@@ -6,8 +6,6 @@ import type { RunRequest } from "../../types/index.js";
 const baseRequest: RunRequest = {
   prompt: "hello",
   cwd: process.cwd(),
-  nonInteractive: true,
-  assumeYes: true,
   timeoutMs: 1000,
   verbose: false
 };

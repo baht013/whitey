@@ -22,6 +22,10 @@ Whitey is a lightweight CLI orchestration layer with a single executor provider 
 - `src/mcp/memory-validation.ts`: memory-specific argument validation.
 - `src/mcp/paths.ts`: working-directory resolution for MCP operations.
 
+## Test Support
+
+- `src/test-support/env.ts`: scoped environment overrides for subprocess-oriented tests.
+
 ## Flow
 
 1. Parse arguments into a normalized command payload.

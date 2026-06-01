@@ -25,6 +25,7 @@
 - Status tests: `src/runtime/__tests__/status.test.ts`
 - Integration tests: `src/cli/__tests__/index.integration.test.ts`
 - MCP memory tests: `src/mcp/__tests__/memory-server.test.ts`
+- Test environment helper: `src/test-support/env.ts`
 
 ## Prompts And Skills
 

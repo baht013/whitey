@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { mkdtemp, writeFile, chmod, readFile } from "node:fs/promises";
 import { runCli } from "../index.js";
+import { withEnv } from "../../test-support/env.js";
 
 async function createMockCopilot(): Promise<string> {
   const dir = await mkdtemp(path.join(os.tmpdir(), "whitey-cli-"));
@@ -67,92 +68,63 @@ async function withCapturedOutput<T>(fn: () => Promise<T>): Promise<{ result: T;
 test("run command json mode returns structured payload and persists history", async () => {
   const cwd = await mkdtemp(path.join(os.tmpdir(), "whitey-run-"));
   const mockCopilot = await createMockCopilot();
-  const prevCmd = process.env.WHITEY_COPILOT_CMD;
-  process.env.WHITEY_COPILOT_CMD = mockCopilot;
-  delete process.env.WHITEY_COPILOT_ARGS_TEMPLATE;
 
-  const captured = await withCapturedOutput(() => runCli(["run", "hello integration", "--yes", "--json"], cwd));
-  assert.equal(captured.result, 0);
+  await withEnv({ WHITEY_COPILOT_CMD: mockCopilot, WHITEY_COPILOT_ARGS_TEMPLATE: undefined }, async () => {
+    const captured = await withCapturedOutput(() => runCli(["run", "hello integration", "--yes", "--json"], cwd));
+    assert.equal(captured.result, 0);
 
-  const payload = JSON.parse(captured.stdout.trim()) as {
-    command: string;
-    ok: boolean;
-    result: { status: string };
-    record: { id: string };
-  };
-  assert.equal(payload.command, "run");
-  assert.equal(payload.ok, true);
-  assert.equal(payload.result.status, "success");
-  assert.ok(payload.record.id.length > 0);
+    const payload = JSON.parse(captured.stdout.trim()) as {
+      command: string;
+      ok: boolean;
+      result: { status: string };
+      record: { id: string };
+    };
+    assert.equal(payload.command, "run");
+    assert.equal(payload.ok, true);
+    assert.equal(payload.result.status, "success");
+    assert.ok(payload.record.id.length > 0);
 
-  const historyRaw = await readFile(path.join(cwd, ".whitey", "history.jsonl"), "utf8");
-  assert.match(historyRaw, /hello integration/);
-
-  if (prevCmd === undefined) {
-    delete process.env.WHITEY_COPILOT_CMD;
-  } else {
-    process.env.WHITEY_COPILOT_CMD = prevCmd;
-  }
+    const historyRaw = await readFile(path.join(cwd, ".whitey", "history.jsonl"), "utf8");
+    assert.match(historyRaw, /hello integration/);
+  });
 });
 
 test("status command json mode reports unauthenticated state", async () => {
   const cwd = await mkdtemp(path.join(os.tmpdir(), "whitey-status-json-"));
   const mockCopilot = await createMockCopilot();
-  const prevCmd = process.env.WHITEY_COPILOT_CMD;
-  const prevAuth = process.env.MOCK_AUTH_MODE;
 
-  process.env.WHITEY_COPILOT_CMD = mockCopilot;
-  process.env.MOCK_AUTH_MODE = "unauthenticated";
+  await withEnv({ WHITEY_COPILOT_CMD: mockCopilot, MOCK_AUTH_MODE: "unauthenticated" }, async () => {
+    const captured = await withCapturedOutput(() => runCli(["status", "--json"], cwd));
+    assert.equal(captured.result, 1);
 
-  const captured = await withCapturedOutput(() => runCli(["status", "--json"], cwd));
-  assert.equal(captured.result, 1);
-
-  const payload = JSON.parse(captured.stdout.trim()) as {
-    command: string;
-    ok: boolean;
-    report: { authenticated: boolean; commandAvailable: boolean };
-  };
-  assert.equal(payload.command, "status");
-  assert.equal(payload.ok, false);
-  assert.equal(payload.report.commandAvailable, true);
-  assert.equal(payload.report.authenticated, false);
-
-  if (prevCmd === undefined) {
-    delete process.env.WHITEY_COPILOT_CMD;
-  } else {
-    process.env.WHITEY_COPILOT_CMD = prevCmd;
-  }
-
-  if (prevAuth === undefined) {
-    delete process.env.MOCK_AUTH_MODE;
-  } else {
-    process.env.MOCK_AUTH_MODE = prevAuth;
-  }
+    const payload = JSON.parse(captured.stdout.trim()) as {
+      command: string;
+      ok: boolean;
+      report: { authenticated: boolean; commandAvailable: boolean };
+    };
+    assert.equal(payload.command, "status");
+    assert.equal(payload.ok, false);
+    assert.equal(payload.report.commandAvailable, true);
+    assert.equal(payload.report.authenticated, false);
+  });
 });
 
 test("history command json mode returns structured entries", async () => {
   const cwd = await mkdtemp(path.join(os.tmpdir(), "whitey-history-json-"));
   const mockCopilot = await createMockCopilot();
-  const prevCmd = process.env.WHITEY_COPILOT_CMD;
-  process.env.WHITEY_COPILOT_CMD = mockCopilot;
-  delete process.env.WHITEY_COPILOT_ARGS_TEMPLATE;
 
-  await withCapturedOutput(() => runCli(["run", "first history record", "--yes", "--json"], cwd));
-  const captured = await withCapturedOutput(() => runCli(["history", "--limit", "5", "--json"], cwd));
+  await withEnv({ WHITEY_COPILOT_CMD: mockCopilot, WHITEY_COPILOT_ARGS_TEMPLATE: undefined }, async () => {
+    await withCapturedOutput(() => runCli(["run", "first history record", "--yes", "--json"], cwd));
+    const captured = await withCapturedOutput(() => runCli(["history", "--limit", "5", "--json"], cwd));
 
-  assert.equal(captured.result, 0);
-  const payload = JSON.parse(captured.stdout.trim()) as {
-    command: string;
-    count: number;
-    entries: Array<{ promptPreview: string }>;
-  };
-  assert.equal(payload.command, "history");
-  assert.ok(payload.count >= 1);
-  assert.match(payload.entries[0]?.promptPreview || "", /first history record/);
-
-  if (prevCmd === undefined) {
-    delete process.env.WHITEY_COPILOT_CMD;
-  } else {
-    process.env.WHITEY_COPILOT_CMD = prevCmd;
-  }
+    assert.equal(captured.result, 0);
+    const payload = JSON.parse(captured.stdout.trim()) as {
+      command: string;
+      count: number;
+      entries: Array<{ promptPreview: string }>;
+    };
+    assert.equal(payload.command, "history");
+    assert.ok(payload.count >= 1);
+    assert.match(payload.entries[0]?.promptPreview || "", /first history record/);
+  });
 });

@@ -115,8 +115,6 @@ async function commandRun(parsed: ReturnType<typeof parseArgs>, cwd: string): Pr
   const result = await runPrompt({
     prompt,
     cwd,
-    nonInteractive: parsed.nonInteractive,
-    assumeYes: parsed.assumeYes,
     timeoutMs: parsed.timeoutMs,
     verbose: parsed.verbose
   });

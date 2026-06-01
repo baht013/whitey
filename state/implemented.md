@@ -17,6 +17,7 @@ Maintenance:
 - JSON output mode is available for `run`, `history`, and `status`.
 - Status command now checks both command availability and auth readiness.
 - Memory MCP server is implemented with project-memory and notepad tools.
+- Memory MCP server surfaces malformed project-memory JSON as an explicit tool error.
 - Prompt pack for memory read-first, write policy, and session-close is implemented.
 - Skill pack for memory capture/recall/hygiene/bootstrap is implemented.
 
@@ -25,7 +26,8 @@ Maintenance:
 - Typecheck + build scripts are configured.
 - Unit tests exist for router, executor, and history modules.
 - Integration tests cover end-to-end run/history/status command behavior with mocked subprocesses.
-- MCP memory server tests cover contract declarations and core read/write/prune behavior.
+- Shared test environment isolation helper prevents env leakage across subprocess-oriented tests.
+- MCP memory server tests cover contract declarations, core read/write/prune behavior, and malformed project-memory handling.
 
 ## Known Limits
 

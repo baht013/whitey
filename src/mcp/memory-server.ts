@@ -15,6 +15,8 @@ interface ProjectMemory {
   directives?: Array<{ directive: string; priority: "high" | "normal"; context?: string; timestamp: string }>;
 }
 
+type ProjectMemoryReadResult = { ok: true; data: ProjectMemory } | { ok: false; error: string };
+
 const server = new Server({ name: "whitey-memory", version: "0.1.0" }, { capabilities: { tools: {} } });
 
 export function buildMemoryServerTools() {
@@ -202,22 +204,38 @@ async function readProjectMemory(filePath: string): Promise<ProjectMemory> {
     return {};
   }
 
+  const parsed = JSON.parse(await readFile(filePath, "utf8")) as unknown;
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("Project memory must be a JSON object.");
+  }
+
+  return parsed as ProjectMemory;
+}
+
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
+async function readProjectMemoryResult(filePath: string): Promise<ProjectMemoryReadResult> {
   try {
-    return JSON.parse(await readFile(filePath, "utf8")) as ProjectMemory;
-  } catch {
-    return {};
+    return { ok: true, data: await readProjectMemory(filePath) };
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      return { ok: false, error: "Invalid project memory JSON." };
+    }
+    return { ok: false, error: errorMessage(error, "Failed to read project memory.") };
   }
 }
 
 export async function handleMemoryToolCall(request: {
   params: { name: string; arguments?: Record<string, unknown> };
 }) {
-  const { name, arguments: args = {} } = request.params;
-  const a = args as Record<string, unknown>;
+  const { name, arguments: rawArgs = {} } = request.params;
+  const toolArgs = rawArgs as Record<string, unknown>;
 
   let wd: string;
   try {
-    wd = await resolveWorkingDirectory(a.workingDirectory as string | undefined);
+    wd = await resolveWorkingDirectory(toolArgs.workingDirectory as string | undefined);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to resolve working directory.";
     return errorText(message);
@@ -228,8 +246,13 @@ export async function handleMemoryToolCall(request: {
 
   switch (name) {
     case "project_memory_read": {
-      const data = await readProjectMemory(memPath);
-      const section = a.section as string | undefined;
+      const result = await readProjectMemoryResult(memPath);
+      if (!result.ok) {
+        return errorText(result.error);
+      }
+
+      const data = result.data;
+      const section = toolArgs.section as string | undefined;
       if (section && section !== "all" && section in data) {
         return text((data as Record<string, unknown>)[section]);
       }
@@ -237,15 +260,20 @@ export async function handleMemoryToolCall(request: {
     }
 
     case "project_memory_write": {
-      const newMemory = a.memory as Record<string, unknown>;
+      const newMemory = toolArgs.memory as Record<string, unknown>;
       if (!newMemory || typeof newMemory !== "object" || Array.isArray(newMemory)) {
         return errorText("memory must be an object");
       }
 
       await mkdir(memoryRoot(wd), { recursive: true });
-      const merge = Boolean(a.merge);
+      const merge = Boolean(toolArgs.merge);
       if (merge) {
-        const existing = await readProjectMemory(memPath);
+        const result = await readProjectMemoryResult(memPath);
+        if (!result.ok) {
+          return errorText(result.error);
+        }
+
+        const existing = result.data;
         await writeAtomic(memPath, JSON.stringify({ ...existing, ...newMemory }, null, 2));
       } else {
         await writeAtomic(memPath, JSON.stringify(newMemory, null, 2));
@@ -254,14 +282,19 @@ export async function handleMemoryToolCall(request: {
     }
 
     case "project_memory_add_note": {
-      const category = a.category as string;
-      const content = a.content as string;
+      const category = toolArgs.category as string;
+      const content = toolArgs.content as string;
       if (!category || !content) {
         return errorText("category and content are required");
       }
 
       await mkdir(memoryRoot(wd), { recursive: true });
-      const data = await readProjectMemory(memPath);
+      const result = await readProjectMemoryResult(memPath);
+      if (!result.ok) {
+        return errorText(result.error);
+      }
+
+      const data = result.data;
       if (!data.notes) data.notes = [];
       data.notes.push({ category, content, timestamp: new Date().toISOString() });
       await writeAtomic(memPath, JSON.stringify(data, null, 2));
@@ -269,18 +302,23 @@ export async function handleMemoryToolCall(request: {
     }
 
     case "project_memory_add_directive": {
-      const directive = a.directive as string;
+      const directive = toolArgs.directive as string;
       if (!directive) {
         return errorText("directive is required");
       }
 
       await mkdir(memoryRoot(wd), { recursive: true });
-      const data = await readProjectMemory(memPath);
+      const result = await readProjectMemoryResult(memPath);
+      if (!result.ok) {
+        return errorText(result.error);
+      }
+
+      const data = result.data;
       if (!data.directives) data.directives = [];
       data.directives.push({
         directive,
-        priority: (a.priority as "high" | "normal") || "normal",
-        context: a.context as string | undefined,
+        priority: (toolArgs.priority as "high" | "normal") || "normal",
+        context: toolArgs.context as string | undefined,
         timestamp: new Date().toISOString()
       });
       await writeAtomic(memPath, JSON.stringify(data, null, 2));
@@ -293,7 +331,7 @@ export async function handleMemoryToolCall(request: {
       }
 
       const content = await readFile(notePath, "utf8");
-      const section = a.section as string | undefined;
+      const section = toolArgs.section as string | undefined;
       if (section && section !== "all") {
         const sectionName = section === "working" ? "working memory" : section;
         return text({ section, content: extractSection(content, sectionName) });
@@ -302,7 +340,7 @@ export async function handleMemoryToolCall(request: {
     }
 
     case "notepad_write_priority": {
-      const content = ((a.content as string) || "").slice(0, 500);
+      const content = ((toolArgs.content as string) || "").slice(0, 500);
       await mkdir(memoryRoot(wd), { recursive: true });
       const existing = existsSync(notePath) ? await readFile(notePath, "utf8") : "";
       const updated = replaceSection(existing, "priority", content);
@@ -311,7 +349,7 @@ export async function handleMemoryToolCall(request: {
     }
 
     case "notepad_write_working": {
-      const content = a.content as string;
+      const content = toolArgs.content as string;
       if (!content) {
         return errorText("content is required");
       }
@@ -325,7 +363,7 @@ export async function handleMemoryToolCall(request: {
     }
 
     case "notepad_write_manual": {
-      const content = a.content as string;
+      const content = toolArgs.content as string;
       if (!content) {
         return errorText("content is required");
       }
@@ -342,7 +380,7 @@ export async function handleMemoryToolCall(request: {
         return text({ pruned: 0, message: "No notepad file found" });
       }
 
-      const parsedDays = parseNotepadPruneDaysOld(a.daysOld);
+      const parsedDays = parseNotepadPruneDaysOld(toolArgs.daysOld);
       if (!parsedDays.ok) {
         return errorText(parsedDays.error);
       }

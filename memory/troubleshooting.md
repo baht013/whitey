@@ -33,3 +33,14 @@ Guard:
 
 Reference:
 - `src/runtime/executor.ts`
+
+## Malformed Project Memory
+
+Symptom:
+- MCP memory tools return `Invalid project memory JSON.`
+
+Check:
+- `.whitey/memory/project-memory.json`
+
+Fix:
+- Restore the file to a valid JSON object before using project-memory tools.

@@ -3,8 +3,6 @@ export type RunStatus = "success" | "executor_error" | "validation_error" | "app
 export interface RunRequest {
   prompt: string;
   cwd: string;
-  nonInteractive: boolean;
-  assumeYes: boolean;
   timeoutMs: number;
   verbose: boolean;
 }
@@ -32,11 +30,6 @@ export interface RunRecord {
   exitCode: number;
   summary: string;
   transcriptPath: string;
-}
-
-export interface CommandContext {
-  argv: string[];
-  cwd: string;
 }
 
 export interface ParsedArgs {

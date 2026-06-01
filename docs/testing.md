@@ -30,11 +30,16 @@
 - `src/cli/__tests__/index.integration.test.ts`
   - End-to-end run command behavior with mocked Copilot subprocess
   - JSON mode validation for `run`, `history`, and `status`
+  - Isolated Copilot-related environment overrides via `src/test-support/env.ts`
 
 - `src/mcp/__tests__/memory-server.test.ts`
   - MCP memory tool contract coverage
   - Project-memory read/write/append flows
+  - Malformed project-memory JSON error handling
   - Notepad section writing and prune validation
+
+- `src/test-support/__tests__/env.test.ts`
+  - Environment override restoration after success and failure
 
 ## Commands
 

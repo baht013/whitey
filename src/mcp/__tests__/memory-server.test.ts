@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it } from "node:test";
@@ -17,9 +17,10 @@ const REQUIRED_TOOLS = [
   "notepad_stats"
 ] as const;
 
+process.env.WHITEY_MEMORY_SERVER_DISABLE_AUTO_START = "1";
+
 describe("mcp/memory-server", () => {
   it("declares expected memory tools", async () => {
-    process.env.WHITEY_MEMORY_SERVER_DISABLE_AUTO_START = "1";
     const { buildMemoryServerTools } = await import("../memory-server.js");
     const names = buildMemoryServerTools().map((tool: { name: string }) => tool.name);
 
@@ -29,7 +30,6 @@ describe("mcp/memory-server", () => {
   });
 
   it("writes and reads project memory", async () => {
-    process.env.WHITEY_MEMORY_SERVER_DISABLE_AUTO_START = "1";
     const { handleMemoryToolCall } = await import("../memory-server.js");
     const wd = await mkdtemp(join(tmpdir(), "whitey-mcp-memory-"));
 
@@ -57,7 +57,6 @@ describe("mcp/memory-server", () => {
   });
 
   it("handles notes and directives append", async () => {
-    process.env.WHITEY_MEMORY_SERVER_DISABLE_AUTO_START = "1";
     const { handleMemoryToolCall } = await import("../memory-server.js");
     const wd = await mkdtemp(join(tmpdir(), "whitey-mcp-memory-"));
 
@@ -97,8 +96,26 @@ describe("mcp/memory-server", () => {
     assert.equal(payload.directives.length, 1);
   });
 
+  it("returns error for malformed project memory", async () => {
+    const { handleMemoryToolCall } = await import("../memory-server.js");
+    const wd = await mkdtemp(join(tmpdir(), "whitey-mcp-memory-"));
+    const memoryDir = join(wd, ".whitey", "memory");
+    await mkdir(memoryDir, { recursive: true });
+    await writeFile(join(memoryDir, "project-memory.json"), "{", "utf8");
+
+    const response = await handleMemoryToolCall({
+      params: {
+        name: "project_memory_read",
+        arguments: { workingDirectory: wd }
+      }
+    });
+
+    assert.equal("isError" in response ? response.isError : false, true);
+    const payload = JSON.parse(response.content[0]?.text || "{}");
+    assert.match(payload.error, /Invalid project memory JSON/);
+  });
+
   it("writes notepad sections and reports stats", async () => {
-    process.env.WHITEY_MEMORY_SERVER_DISABLE_AUTO_START = "1";
     const { handleMemoryToolCall } = await import("../memory-server.js");
     const wd = await mkdtemp(join(tmpdir(), "whitey-mcp-memory-"));
 
@@ -139,7 +156,6 @@ describe("mcp/memory-server", () => {
   });
 
   it("returns validation error for invalid prune argument", async () => {
-    process.env.WHITEY_MEMORY_SERVER_DISABLE_AUTO_START = "1";
     const { handleMemoryToolCall } = await import("../memory-server.js");
     const wd = await mkdtemp(join(tmpdir(), "whitey-mcp-memory-"));
 

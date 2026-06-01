@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { mkdtemp, writeFile, chmod } from "node:fs/promises";
 import { getCopilotStatus } from "../status.js";
+import { withEnv } from "../../test-support/env.js";
 
 async function createMockCopilot(mode: "authenticated" | "unauthenticated"): Promise<string> {
   const dir = await mkdtemp(path.join(os.tmpdir(), "whitey-status-"));
@@ -33,35 +34,23 @@ process.exit(2);
 
 test("getCopilotStatus detects authenticated state", async () => {
   const cmd = await createMockCopilot("authenticated");
-  const previous = process.env.WHITEY_COPILOT_CMD;
-  process.env.WHITEY_COPILOT_CMD = cmd;
 
-  const report = await getCopilotStatus(process.cwd());
-  assert.equal(report.commandAvailable, true);
-  assert.equal(report.authChecked, true);
-  assert.equal(report.authenticated, true);
-
-  if (previous === undefined) {
-    delete process.env.WHITEY_COPILOT_CMD;
-  } else {
-    process.env.WHITEY_COPILOT_CMD = previous;
-  }
+  await withEnv({ WHITEY_COPILOT_CMD: cmd }, async () => {
+    const report = await getCopilotStatus(process.cwd());
+    assert.equal(report.commandAvailable, true);
+    assert.equal(report.authChecked, true);
+    assert.equal(report.authenticated, true);
+  });
 });
 
 test("getCopilotStatus detects unauthenticated state", async () => {
   const cmd = await createMockCopilot("unauthenticated");
-  const previous = process.env.WHITEY_COPILOT_CMD;
-  process.env.WHITEY_COPILOT_CMD = cmd;
 
-  const report = await getCopilotStatus(process.cwd());
-  assert.equal(report.commandAvailable, true);
-  assert.equal(report.authChecked, true);
-  assert.equal(report.authenticated, false);
-  assert.match(report.authHint, /unauthenticated|login/i);
-
-  if (previous === undefined) {
-    delete process.env.WHITEY_COPILOT_CMD;
-  } else {
-    process.env.WHITEY_COPILOT_CMD = previous;
-  }
+  await withEnv({ WHITEY_COPILOT_CMD: cmd }, async () => {
+    const report = await getCopilotStatus(process.cwd());
+    assert.equal(report.commandAvailable, true);
+    assert.equal(report.authChecked, true);
+    assert.equal(report.authenticated, false);
+    assert.match(report.authHint, /unauthenticated|login/i);
+  });
 });

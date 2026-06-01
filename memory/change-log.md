@@ -8,3 +8,4 @@ Track pointer-map updates for quick navigation history.
 | 2026-06-01 | memory/where-to-find.md | Added pointers for app dispatch module, status module, and integration tests |
 | 2026-06-01 | memory/commands.md | Added JSON-mode command examples for automation workflows |
 | 2026-06-01 | memory/overview.md, memory/where-to-find.md, memory/troubleshooting.md | Migrated pointers to cli/runtime layout and added MCP memory references |
+| 2026-06-01 | memory/where-to-find.md, memory/troubleshooting.md | Added pointers for test env helper and malformed project-memory troubleshooting |

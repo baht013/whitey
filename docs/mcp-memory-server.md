@@ -19,6 +19,8 @@ This document defines the Whitey memory MCP server implementation and usage.
 - `.whitey/memory/project-memory.json`
 - `.whitey/memory/notepad.md`
 
+Malformed project-memory JSON returns an explicit tool error instead of silently replacing memory content.
+
 ## Tools
 
 - `project_memory_read`

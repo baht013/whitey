@@ -15,7 +15,9 @@
     "memoryPromptPack": true,
     "memorySkillPack": true,
     "strictOptionValidation": true,
-    "timeoutEscalation": true
+    "timeoutEscalation": true,
+    "testEnvironmentIsolation": true,
+    "mcpMemoryValidation": true
   },
   "notImplemented": {
     "teamOrchestration": true,
