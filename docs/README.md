@@ -1,0 +1,27 @@
+# Documentation Index
+
+This directory documents the current Whitey implementation and operating model.
+
+## Documents
+
+- [Architecture Overview](architecture.md)
+- [CLI Reference](cli-reference.md)
+- [Execution Lifecycle](execution-lifecycle.md)
+- [Testing Guide](testing.md)
+- [Configuration Reference](configuration.md)
+- [Roadmap](roadmap.md)
+- [Session Log](session-log.md)
+
+## Maintenance
+
+- Session workflow instructions: `.github/copilot-instructions.md`
+
+## Scope Baseline
+
+Current implementation is intentionally minimal:
+
+- Single-agent execution using Copilot CLI
+- Minimal command router
+- Approval gate for risky prompt intents
+- Local persistence in `.whitey/`
+- Unit tests for parser, executor behavior, and history storage

@@ -1,0 +1,4 @@
+node_modules/
+dist/
+.whitey/
+*.log

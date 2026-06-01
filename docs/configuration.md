@@ -1,0 +1,18 @@
+# Configuration Reference
+
+## Environment Variables
+
+- `WHITEY_COPILOT_CMD`
+  - Override the executable name/path (default: `copilot`).
+
+- `WHITEY_COPILOT_ARGS_TEMPLATE`
+  - Space-delimited template for provider args.
+  - Use `{prompt}` placeholder for prompt insertion.
+  - If unset, default args are `--prompt <prompt>`.
+
+## Storage Layout
+
+Runtime data is project-local under `.whitey/`:
+
+- `.whitey/history.jsonl`: append-only run index.
+- `.whitey/runs/<uuid>.json`: per-run full transcript bundle.

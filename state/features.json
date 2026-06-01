@@ -1,0 +1,21 @@
+{
+  "snapshotDate": "2026-06-01",
+  "phase": "phase-2-core-hardening",
+  "implemented": {
+    "singleRunExecution": true,
+    "copilotProvider": true,
+    "commandRouter": true,
+    "approvalGate": true,
+    "localHistoryPersistence": true,
+    "unitTests": true,
+    "strictOptionValidation": true,
+    "timeoutEscalation": true
+  },
+  "notImplemented": {
+    "teamOrchestration": true,
+    "pluginsAndHooks": true,
+    "hud": true,
+    "webUi": true,
+    "multiProviderRuntime": true
+  }
+}
