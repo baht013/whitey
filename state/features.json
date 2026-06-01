@@ -8,6 +8,9 @@
     "approvalGate": true,
     "localHistoryPersistence": true,
     "unitTests": true,
+    "integrationTests": true,
+    "jsonOutputMode": true,
+    "authAwareStatusCheck": true,
     "strictOptionValidation": true,
     "timeoutEscalation": true
   },

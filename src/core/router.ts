@@ -18,6 +18,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
   let assumeYes = false;
   let timeoutMs = DEFAULT_TIMEOUT_MS;
   let verbose = false;
+  let json = false;
   let historyLimit = DEFAULT_HISTORY_LIMIT;
 
   const args = [...argv];
@@ -50,6 +51,11 @@ export function parseArgs(argv: string[]): ParsedArgs {
       nonInteractive = true;
       continue;
     }
+    if (arg === "--json") {
+      if (command === "help") throw new Error("--json is not valid with help.");
+      json = true;
+      continue;
+    }
     if (arg === "--yes") {
       if (command !== "run") throw new Error("--yes is only valid with run.");
       assumeYes = true;
@@ -78,9 +84,6 @@ export function parseArgs(argv: string[]): ParsedArgs {
     }
 
     promptParts.push(arg);
-    if (command === "run") {
-      promptStarted = true;
-    }
   }
 
   if (command === "run" && promptParts.length === 0) {
@@ -94,6 +97,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     assumeYes,
     timeoutMs,
     verbose,
+    json,
     historyLimit
   };
 }
@@ -103,14 +107,14 @@ export function helpText(): string {
     "whitey: lightweight Copilot-first runner",
     "",
     "Usage:",
-    "  whitey run <prompt> [--timeout-ms N] [--yes] [--non-interactive] [--verbose]",
-    "  whitey history [--limit N]",
-    "  whitey status",
+    "  whitey run <prompt> [--timeout-ms N] [--yes] [--non-interactive] [--verbose] [--json]",
+    "  whitey history [--limit N] [--json]",
+    "  whitey status [--json]",
     "  whitey help",
     "",
     "Environment:",
     "  WHITEY_COPILOT_CMD            Override copilot executable (default: copilot)",
     "  WHITEY_COPILOT_ARGS_TEMPLATE  Space-separated args with {prompt} placeholder",
-    "                               Default invocation: copilot chat <prompt>"
+    "                               Default invocation: copilot --prompt <prompt>"
   ].join("\n");
 }

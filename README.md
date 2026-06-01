@@ -26,8 +26,12 @@ A lightweight Copilot-first CLI runner inspired by oh-my-codex, focused on core 
 
 - `whitey run "..."` executes a prompt
 - `whitey history` shows recent runs
-- `whitey status` checks environment readiness
+- `whitey status` checks command availability and auth readiness
 - `whitey help` shows command usage
+
+JSON automation mode:
+
+- Add `--json` to `run`, `history`, and `status` commands for structured output.
 
 ## Notes
 

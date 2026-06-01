@@ -23,6 +23,14 @@
   - Persistence ordering behavior
   - Missing history fallback behavior
 
+- `src/core/status.test.ts`
+  - Authenticated status detection
+  - Unauthenticated status detection
+
+- `src/cli.integration.test.ts`
+  - End-to-end run command behavior with mocked Copilot subprocess
+  - JSON mode validation for `run`, `history`, and `status`
+
 ## Commands
 
 - Type check: `npm run check`

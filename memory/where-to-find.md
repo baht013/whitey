@@ -4,7 +4,8 @@
 
 - Parse logic: `src/core/router.ts`
 - Help text: `src/core/router.ts`
-- Dispatch flow: `src/cli.ts`
+- Dispatch flow: `src/app.ts`
+- Executable wrapper: `src/cli.ts`
 
 ## Safety
 
@@ -20,6 +21,8 @@
 - Router tests: `src/core/router.test.ts`
 - Executor tests: `src/core/executor.test.ts`
 - History tests: `src/core/history.test.ts`
+- Status tests: `src/core/status.test.ts`
+- Integration tests: `src/cli.integration.test.ts`
 
 ## Product State
 

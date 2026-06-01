@@ -7,14 +7,16 @@
 - Approval gate and non-interactive fail-closed mode
 - Persistent local run history and transcripts
 - Baseline unit tests and build checks
+- Integration tests with mocked Copilot subprocess behavior
+- JSON output mode for `run`, `history`, and `status`
+- Auth-aware status checks (command + auth readiness)
 
 ## Planned Next
 
 1. Add explicit provider adapter interface for multiple backends.
-2. Introduce integration tests with a mocked subprocess layer.
-3. Add richer status diagnostics (auth, binary version, dry-run checks).
-4. Add optional JSON output mode for automation.
-5. Add prompt packs and skill-style command presets.
+2. Improve auth diagnostics with provider-specific parsing and fallback strategies.
+3. Add optional machine-readable error taxonomy in JSON mode.
+4. Add prompt packs and skill-style command presets.
 
 ## Deferred by Design
 

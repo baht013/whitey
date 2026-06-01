@@ -46,6 +46,7 @@ export interface ParsedArgs {
   assumeYes: boolean;
   timeoutMs: number;
   verbose: boolean;
+  json: boolean;
   historyLimit: number;
 }
 
@@ -65,4 +66,25 @@ export interface CopilotExecutionOutput {
   exitCode: number;
   stdout: string;
   stderr: string;
+}
+
+export interface CopilotStatusCheckResult {
+  ok: boolean;
+  timedOut: boolean;
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+}
+
+export interface CopilotStatusReport {
+  cwd: string;
+  copilotCommand: string;
+  commandAvailable: boolean;
+  authChecked: boolean;
+  authenticated: boolean;
+  authHint: string;
+  checks: {
+    version: CopilotStatusCheckResult;
+    auth: CopilotStatusCheckResult;
+  };
 }

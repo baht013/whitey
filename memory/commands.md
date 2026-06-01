@@ -11,8 +11,11 @@
 
 - Help: `npm run start -- help`
 - Status: `npm run start -- status`
+- Status JSON: `npm run start -- status --json`
 - Run: `npm run start -- run "your prompt" --yes`
+- Run JSON: `npm run start -- run "your prompt" --yes --json`
 - History: `npm run start -- history --limit 10`
+- History JSON: `npm run start -- history --limit 10 --json`
 
 ## Important Paths
 

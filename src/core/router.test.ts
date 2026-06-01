@@ -8,17 +8,19 @@ test("parseArgs defaults to help when run has no prompt", () => {
 });
 
 test("parseArgs parses run flags and prompt", () => {
-  const parsed = parseArgs(["run", "--timeout-ms", "5000", "--yes", "fix", "bug"]);
+  const parsed = parseArgs(["run", "--timeout-ms", "5000", "--yes", "--json", "fix", "bug"]);
   assert.equal(parsed.command, "run");
   assert.equal(parsed.timeoutMs, 5000);
   assert.equal(parsed.assumeYes, true);
+  assert.equal(parsed.json, true);
   assert.equal(parsed.prompt, "fix bug");
 });
 
 test("parseArgs parses history limit", () => {
-  const parsed = parseArgs(["history", "--limit", "3"]);
+  const parsed = parseArgs(["history", "--limit", "3", "--json"]);
   assert.equal(parsed.command, "history");
   assert.equal(parsed.historyLimit, 3);
+  assert.equal(parsed.json, true);
 });
 
 test("parseArgs rejects unknown options", () => {
