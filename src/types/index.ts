@@ -6,6 +6,7 @@ export interface RunRequest {
   timeoutMs: number;
   verbose: boolean;
   useMemoryContext?: boolean;
+  startupContext?: string;
 }
 
 export interface RunResult {
@@ -90,4 +91,39 @@ export interface CopilotStatusReport {
     version: CopilotStatusCheckResult;
     auth: CopilotStatusCheckResult;
   };
+}
+
+export interface WhiteySessionState {
+  sessionId: string;
+  startedAt: string;
+  cwd: string;
+  pid: number;
+  platform: NodeJS.Platform;
+  provider?: string;
+  nativeMode?: boolean;
+}
+
+export interface WhiteySessionCloseOutcome {
+  status: RunStatus | "runtime_error";
+  exitCode: number;
+  summary: string;
+  runId?: string;
+}
+
+export type WhiteyLifecycleEventName =
+  | "session-start"
+  | "context-build"
+  | "turn-complete"
+  | "session-close"
+  | "mcp-start"
+  | "mcp-shutdown";
+
+export interface WhiteyLifecycleEvent {
+  schemaVersion: "1";
+  event: WhiteyLifecycleEventName;
+  timestamp: string;
+  sessionId?: string;
+  cwd: string;
+  source: "whitey-run" | "whitey-mcp" | "whitey-hooks";
+  payload?: Record<string, unknown>;
 }

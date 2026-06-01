@@ -13,6 +13,8 @@ Whitey is a lightweight CLI orchestration layer with a single executor provider 
 - `src/runtime/approval.ts`: risk assessment and approval handling.
 - `src/runtime/executor.ts`: normalized run execution and result shaping.
 - `src/runtime/memoryContext.ts`: bounded memory context construction for run prompts.
+- `src/runtime/sessionLifecycle.ts`: active-session state, lifecycle logs, startup context, and close flow.
+- `src/runtime/plugins.ts`: local runtime hook dispatch + plugin SDK.
 - `src/runtime/provider/copilotCli.ts`: subprocess invocation of Copilot CLI.
 - `src/runtime/status.ts`: command and auth readiness checks for Copilot.
 - `src/runtime/history.ts`: append-only history + transcript persistence.
@@ -25,6 +27,7 @@ Whitey is a lightweight CLI orchestration layer with a single executor provider 
 - `src/mcp/memory-stdio.ts`: MCP server assembly for memory tools.
 - `src/mcp/memory-server.ts`: auto-starting memory server entrypoint.
 - `src/mcp/bootstrap.ts`: MCP stdio start and auto-start lifecycle helpers.
+- `src/mcp/lifecycle-telemetry.ts`: bounded MCP lifecycle JSONL telemetry writer.
 - `src/mcp/memory-validation.ts`: memory-specific argument validation.
 - `src/mcp/paths.ts`: working-directory resolution for MCP operations.
 
@@ -36,15 +39,17 @@ Whitey is a lightweight CLI orchestration layer with a single executor provider 
 
 1. Parse arguments into a normalized command payload.
 2. If command is `run`, evaluate approval policy.
-3. Build optional memory context from `.whitey/memory/project-memory.json` and `notepad.md`.
-4. Execute prompt via Copilot CLI provider.
-5. Normalize result into `RunResult` status + timings.
-6. Persist transcript and summary record under `.whitey/`.
-7. Print text output or JSON (`--json`) and set exit code.
+3. Start Whitey session lifecycle pointer and emit lifecycle start events.
+4. Build startup context (execution-session + optional memory context).
+5. Execute prompt via Copilot CLI provider.
+6. Normalize result into `RunResult` status + timings.
+7. Persist transcript and summary record under `.whitey/`.
+8. Close session lifecycle and append safe working-memory summary when enabled.
+9. Print text output or JSON (`--json`) and set exit code.
 
 ## Design Constraints
 
 - No team orchestration in current phase.
-- No plugin system in current phase.
+- Runtime plugins are local/project-scoped only (`.whitey/hooks/*.mjs`).
 - No TUI/HUD in current phase.
 - Provider abstraction is implicit via injectable executor dependency in tests; full multi-provider adapter layer is planned for a later phase.

@@ -203,7 +203,16 @@ export function helpText(): string {
     "  WHITEY_COPILOT_ARGS_TEMPLATE  Space-separated args with {prompt} placeholder",
     "                               Default invocation: copilot --prompt <prompt>",
     "  WHITEY_MEMORY_CONTEXT         Set to 0 to disable run-time memory-context injection",
+    "  WHITEY_HOOK_PLUGINS           Set to 0 to disable runtime hook plugins",
+    "  WHITEY_HOOK_PLUGIN_TIMEOUT_MS Timeout for each runtime hook plugin (default: 1500)",
     "  WHITEY_MCP_SERVER_DISABLE_AUTO_START",
-    "                               Set to 1 to disable MCP server auto-start globally"
+    "                               Set to 1 to disable MCP server auto-start globally",
+    "  WHITEY_MEMORY_SERVER_DISABLE_AUTO_START",
+    "                               Set to 1 to disable memory MCP server auto-start",
+    "  WHITEY_MCP_TRANSPORT_DEBUG    Set to 1 to log MCP bootstrap debug info to stderr",
+    "  WHITEY_MCP_PARENT_WATCHDOG_INTERVAL_MS",
+    "                               Parent PID watchdog interval (default: 5000)",
+    "  WHITEY_MCP_LIFECYCLE_LOG      Set to 0|false|off|no to disable MCP lifecycle logs",
+    "  WHITEY_MCP_LIFECYCLE_LOG_DIR  Override MCP lifecycle telemetry directory"
   ].join("\n");
 }

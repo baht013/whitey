@@ -18,10 +18,13 @@
 
 - Storage path helpers: `src/utils/fs.ts`
 - Record persistence + history retrieval: `src/runtime/history.ts`
+- Session lifecycle state + logs + startup context: `src/runtime/sessionLifecycle.ts`
+- Runtime hook plugins and SDK: `src/runtime/plugins.ts`
 - Run memory-context assembly: `src/runtime/memoryContext.ts`
 - MCP memory tool handlers: `src/mcp/memory-tools.ts`
 - MCP memory server assembly: `src/mcp/memory-stdio.ts`
 - MCP memory entrypoint + auto-start: `src/mcp/memory-server.ts`
+- MCP lifecycle telemetry + watchdog shutdown: `src/mcp/bootstrap.ts`, `src/mcp/lifecycle-telemetry.ts`
 
 ## Testing
 
@@ -33,6 +36,9 @@
 - MCP memory tests: `src/mcp/__tests__/memory-server.test.ts`
 - Memory context tests: `src/runtime/__tests__/memoryContext.test.ts`
 - MCP bootstrap tests: `src/mcp/__tests__/bootstrap.test.ts`
+- Session lifecycle tests: `src/runtime/__tests__/sessionLifecycle.test.ts`
+- Runtime plugin tests: `src/runtime/__tests__/plugins.test.ts`
+- MCP server lifecycle tests: `src/mcp/__tests__/server-lifecycle.test.ts`
 - Test environment helper: `src/test-support/env.ts`
 
 ## Prompts And Skills

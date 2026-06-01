@@ -5,6 +5,8 @@
 ### `whitey run <prompt> [flags]`
 Execute one prompt through Copilot CLI.
 
+Run lifecycle now includes session pointer/log updates and startup-context injection with a `[Whitey execution session]` block.
+
 Flags:
 - `--timeout-ms <N>`: execution timeout in milliseconds (default 120000)
 - `--yes`: auto-approve risky actions

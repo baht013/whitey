@@ -1,6 +1,6 @@
 {
   "snapshotDate": "2026-06-01",
-  "phase": "phase-2-memory-context-cli-parity",
+  "phase": "phase-3-lifecycle-runtime-hooks",
   "implemented": {
     "singleRunExecution": true,
     "copilotProvider": true,
@@ -22,11 +22,16 @@
     "mcpServeCommand": true,
     "memoryCliParityCommands": true,
     "agentsTemplateBootstrap": true,
-    "globalMcpAutoStartDisable": true
+    "globalMcpAutoStartDisable": true,
+    "sessionLifecycleCore": true,
+    "runtimeHookPlugins": true,
+    "mcpLifecycleShutdown": true,
+    "mcpLifecycleTelemetry": true,
+    "sessionCloseWorkingMemorySummary": true
   },
   "notImplemented": {
     "teamOrchestration": true,
-    "pluginsAndHooks": true,
+    "pluginsAndHooks": false,
     "hud": true,
     "webUi": true,
     "multiProviderRuntime": true

@@ -26,6 +26,16 @@
   - Missing-file no-op behavior
   - Env-based memory-context disable behavior
 
+- `src/runtime/__tests__/sessionLifecycle.test.ts`
+  - Session state creation/cleanup behavior
+  - Startup context assembly with execution-session + memory sections
+  - Session-close working-memory summary behavior
+
+- `src/runtime/__tests__/plugins.test.ts`
+  - Local plugin discovery + dispatch
+  - Hook disable env behavior
+  - Plugin timeout behavior
+
 - `src/runtime/__tests__/history.test.ts`
   - Persistence ordering behavior
   - Missing history fallback behavior
@@ -49,6 +59,10 @@
 
 - `src/mcp/__tests__/bootstrap.test.ts`
   - Global and per-server MCP auto-start disable behavior
+  - Parent watchdog interval parsing
+
+- `src/mcp/__tests__/server-lifecycle.test.ts`
+  - Built memory-server lifecycle exit behavior on stdin close, SIGTERM, and SIGINT
 
 - `src/test-support/__tests__/env.test.ts`
   - Environment override restoration after success and failure

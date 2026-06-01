@@ -45,7 +45,12 @@ export async function runPrompt(
   const buildMemoryContext = dependencies.buildMemoryContext ?? buildRunMemoryContext;
   let prompt = request.prompt;
 
-  if (request.useMemoryContext ?? true) {
+  const injectedContext = request.startupContext;
+  if (injectedContext !== undefined) {
+    if (injectedContext.trim().length > 0) {
+      prompt = `${injectedContext}\n\n[User request]\n${request.prompt}`;
+    }
+  } else if (request.useMemoryContext ?? true) {
     try {
       const memoryContext = await buildMemoryContext(request.cwd);
       if (memoryContext.trim().length > 0) {

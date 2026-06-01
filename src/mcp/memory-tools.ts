@@ -192,6 +192,19 @@ async function writeAtomic(filePath: string, content: string): Promise<void> {
   await rename(tmpPath, filePath);
 }
 
+export async function appendNotepadWorkingEntry(
+  workingDirectory: string,
+  content: string,
+  timestamp = new Date().toISOString()
+): Promise<void> {
+  const notePath = notepadPath(workingDirectory);
+  await mkdir(memoryRoot(workingDirectory), { recursive: true });
+  const existing = existsSync(notePath) ? await readFile(notePath, "utf8") : "";
+  const entry = `[${timestamp}] ${content}`;
+  const updated = appendToSection(existing, "working memory", entry);
+  await writeAtomic(notePath, updated);
+}
+
 export async function readProjectMemory(filePath: string): Promise<ProjectMemory> {
   if (!existsSync(filePath)) {
     return {};
@@ -347,11 +360,7 @@ export async function handleMemoryToolCall(request: {
         return errorText("content is required");
       }
 
-      await mkdir(memoryRoot(wd), { recursive: true });
-      const existing = existsSync(notePath) ? await readFile(notePath, "utf8") : "";
-      const entry = `[${new Date().toISOString()}] ${content}`;
-      const updated = appendToSection(existing, "working memory", entry);
-      await writeAtomic(notePath, updated);
+      await appendNotepadWorkingEntry(wd, content);
       return text({ success: true });
     }
 

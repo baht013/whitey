@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { withEnv } from "../../test-support/env.js";
-import { shouldAutoStartMcpServer } from "../bootstrap.js";
+import { parentWatchdogIntervalMs, shouldAutoStartMcpServer } from "../bootstrap.js";
 
 describe("mcp/bootstrap", () => {
   it("supports global auto-start disable env", async () => {
@@ -19,6 +19,15 @@ describe("mcp/bootstrap", () => {
   it("allows auto-start when no disable env is set", async () => {
     await withEnv({ WHITEY_MCP_SERVER_DISABLE_AUTO_START: undefined, WHITEY_MEMORY_SERVER_DISABLE_AUTO_START: undefined }, async () => {
       assert.equal(shouldAutoStartMcpServer("memory"), true);
+    });
+  });
+
+  it("parses parent watchdog interval and falls back to default", async () => {
+    await withEnv({ WHITEY_MCP_PARENT_WATCHDOG_INTERVAL_MS: "1200" }, async () => {
+      assert.equal(parentWatchdogIntervalMs(), 1200);
+    });
+    await withEnv({ WHITEY_MCP_PARENT_WATCHDOG_INTERVAL_MS: "invalid" }, async () => {
+      assert.equal(parentWatchdogIntervalMs(), 5000);
     });
   });
 });

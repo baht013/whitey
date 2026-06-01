@@ -47,6 +47,47 @@ Fix:
 - Restore the file to a valid JSON object before using project-memory tools.
 - Use `--no-memory` (or `WHITEY_MEMORY_CONTEXT=0`) as a temporary bypass for `run`.
 
+## Session State Parse Failure
+
+Symptom:
+- `whitey run` reports an invalid session state JSON error.
+
+Check:
+- `.whitey/state/session.json`
+
+Fix:
+- Repair or remove malformed `.whitey/state/session.json`.
+- Re-run the command so Whitey recreates a valid active-session pointer.
+
+## Runtime Hook Plugin Failures
+
+Symptom:
+- stderr shows plugin lifecycle failure warnings.
+
+Check:
+- `.whitey/hooks/*.mjs`
+- `.whitey/logs/hooks-YYYY-MM-DD.jsonl`
+
+Fix:
+- Correct plugin module export (`onHookEvent(event, sdk)`).
+- Reduce plugin latency or increase `WHITEY_HOOK_PLUGIN_TIMEOUT_MS`.
+- Disable plugin dispatch temporarily with `WHITEY_HOOK_PLUGINS=0`.
+
+## MCP Server Exits Unexpectedly
+
+Symptom:
+- memory MCP process exits after parent process changes or stream closure.
+
+Check:
+- stdin/transport state from MCP client
+- `WHITEY_MCP_PARENT_WATCHDOG_INTERVAL_MS`
+- `.whitey/logs/mcp-lifecycle-YYYY-MM-DD.jsonl`
+
+Fix:
+- Keep client stdin open while server should remain active.
+- Tune watchdog interval if needed.
+- Use `WHITEY_MCP_TRANSPORT_DEBUG=1` for bootstrap diagnostics.
+
 ## AGENTS.md Not Overwritten
 
 Symptom:

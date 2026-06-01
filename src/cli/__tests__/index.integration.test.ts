@@ -154,6 +154,7 @@ test("run injects memory context by default and preserves original history promp
     const captured = await withCapturedOutput(() => runCli(["run", "ship release", "--yes", "--json"], cwd));
     assert.equal(captured.result, 0);
     const payload = JSON.parse(captured.stdout.trim()) as { result: { stdout: string } };
+    assert.match(payload.result.stdout, /\[Whitey execution session\]/);
     assert.match(payload.result.stdout, /\[Whitey project memory\]/);
     assert.match(payload.result.stdout, /\[Whitey priority notes\]/);
     assert.match(payload.result.stdout, /\[User request\]\nship release/);
@@ -174,9 +175,25 @@ test("run --no-memory bypasses memory context injection", async () => {
     const captured = await withCapturedOutput(() => runCli(["run", "plain prompt", "--yes", "--no-memory", "--json"], cwd));
     assert.equal(captured.result, 0);
     const payload = JSON.parse(captured.stdout.trim()) as { result: { stdout: string } };
-    assert.match(payload.result.stdout, /^MOCK_RESPONSE:plain prompt/m);
+    assert.match(payload.result.stdout, /\[Whitey execution session\]/);
+    assert.match(payload.result.stdout, /\[User request\]\nplain prompt/);
     assert.doesNotMatch(payload.result.stdout, /\[Whitey project memory\]/);
   });
+});
+
+test("run creates lifecycle logs and clears active session pointer on close", async () => {
+  const cwd = await mkdtemp(path.join(os.tmpdir(), "whitey-run-lifecycle-"));
+  const mockCopilot = await createMockCopilot();
+
+  await withEnv({ WHITEY_COPILOT_CMD: mockCopilot, WHITEY_COPILOT_ARGS_TEMPLATE: undefined }, async () => {
+    const captured = await withCapturedOutput(() => runCli(["run", "capture lifecycle", "--yes", "--json"], cwd));
+    assert.equal(captured.result, 0);
+  });
+
+  await assert.rejects(readFile(path.join(cwd, ".whitey", "state", "session.json"), "utf8"));
+  const sessionHistory = await readFile(path.join(cwd, ".whitey", "logs", "session-history.jsonl"), "utf8");
+  assert.match(sessionHistory, /"type":"start"/);
+  assert.match(sessionHistory, /"type":"close"/);
 });
 
 test("project-memory command writes and reads project memory", async () => {

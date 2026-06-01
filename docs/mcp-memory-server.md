@@ -17,6 +17,24 @@ This document defines the Whitey memory MCP server implementation and usage.
 - Environment variable: `WHITEY_MCP_SERVER_DISABLE_AUTO_START=1` (global)
 - Environment variable: `WHITEY_MEMORY_SERVER_DISABLE_AUTO_START=1`
 
+## Lifecycle + Shutdown
+
+`autoStartStdioMcpServer("memory", server)` now owns shutdown end-to-end with an idempotent close path.
+
+Shutdown triggers:
+- stdin `end`
+- stdin `close`
+- `SIGTERM`
+- `SIGINT`
+- transport `onclose`
+- parent watchdog detects missing parent PID
+
+Lifecycle telemetry controls:
+- `WHITEY_MCP_TRANSPORT_DEBUG=1`
+- `WHITEY_MCP_PARENT_WATCHDOG_INTERVAL_MS`
+- `WHITEY_MCP_LIFECYCLE_LOG=0|false|off|no`
+- `WHITEY_MCP_LIFECYCLE_LOG_DIR`
+
 ## Explicit Serve Command
 
 - `whitey mcp-serve memory`
@@ -48,6 +66,7 @@ Run-time memory-context injection follows the same strictness: malformed project
 
 - `src/mcp/__tests__/memory-server.test.ts`
 - `src/mcp/__tests__/bootstrap.test.ts`
+- `src/mcp/__tests__/server-lifecycle.test.ts`
 
 ## External Client Configuration
 

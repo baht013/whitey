@@ -75,6 +75,21 @@ test("runPrompt skips memory context when disabled in request", async () => {
   assert.equal(prompt, "hello");
 });
 
+test("runPrompt uses startupContext when provided", async () => {
+  let prompt = "";
+  await runPrompt({ ...baseRequest, startupContext: "[Whitey execution session]\nsession id: test-1" }, {
+    buildMemoryContext: async () => "[Whitey project memory]\ntech stack: TypeScript",
+    execute: async (input) => {
+      prompt = input.prompt;
+      return { exitCode: 0, stdout: "ok", stderr: "" };
+    }
+  });
+
+  assert.match(prompt, /^\[Whitey execution session\]/);
+  assert.match(prompt, /\[User request\]\nhello$/);
+  assert.doesNotMatch(prompt, /\[Whitey project memory\]/);
+});
+
 test("runPrompt returns validation_error for malformed memory context source", async () => {
   const result = await runPrompt(baseRequest, {
     buildMemoryContext: async () => {

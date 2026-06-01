@@ -17,7 +17,7 @@ async function withScopedEnv<T>(key: string, value: string, work: () => Promise<
   }
 }
 
-const SERVER_LOADERS: Record<McpServerName, () => Promise<{ start: () => Promise<void> }>> = {
+const SERVER_LOADERS: Record<McpServerName, () => Promise<{ start: () => Promise<unknown> }>> = {
   memory: async () =>
     withScopedEnv("WHITEY_MCP_SERVER_DISABLE_AUTO_START", "1", async () => {
       const memoryServerModule = await import("../mcp/memory-server.js");

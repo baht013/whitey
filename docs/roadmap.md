@@ -17,6 +17,9 @@
 - Managed AGENTS template bootstrap (`agents-init`)
 - Prompt pack for memory read/write/session-close behavior
 - Skill pack for memory bootstrap/recall/capture/hygiene workflows
+- Session lifecycle state/log flow for `whitey run`
+- Local runtime hook plugins (`.whitey/hooks/*.mjs`)
+- MCP stdio lifecycle shutdown + telemetry controls
 
 ## Planned Next
 
@@ -28,5 +31,5 @@
 ## Deferred by Design
 
 - Team orchestration and worker routing
-- Hooks/plugins execution framework
+- External plugin marketplace/framework beyond local `.whitey/hooks/*.mjs`
 - Interactive TUI/HUD

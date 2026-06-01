@@ -30,3 +30,6 @@ Current implementation is intentionally minimal:
 - Run-time memory context injection with opt-out controls
 - CLI parity commands for memory operations and MCP serving
 - Managed AGENTS template bootstrap command
+- Session lifecycle state/history/lifecycle logs for `whitey run`
+- Local runtime hook plugins (`.whitey/hooks/*.mjs`) with scoped state/log SDK
+- MCP lifecycle shutdown + telemetry controls for stdio memory server

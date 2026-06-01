@@ -24,6 +24,12 @@ Maintenance:
 - `project-memory` and `notepad` CLI commands now map directly to memory MCP tools.
 - `agents-init` installs/refreshed managed `AGENTS.md`, preserving manual sections and backing up overwrites.
 - MCP bootstrap supports global auto-start disable (`WHITEY_MCP_SERVER_DISABLE_AUTO_START`) in addition to per-server disable vars.
+- Whitey run path now includes a session lifecycle (`.whitey/state/session.json`, `.whitey/logs/session-history.jsonl`, `.whitey/logs/lifecycle-*.jsonl`).
+- Session startup context now includes an execution-session section and optional bounded memory context.
+- Session close is idempotent and appends a concise working-memory summary when memory context is enabled.
+- Runtime hook plugins are supported from `.whitey/hooks/*.mjs` with scoped SDK logging/state storage.
+- MCP bootstrap now owns lifecycle shutdown on stdin close, signals, transport close, and parent watchdog checks.
+- MCP lifecycle telemetry now writes bounded JSONL under `.whitey/logs/mcp-lifecycle-*.jsonl` (configurable/disable-able via env).
 - Prompt pack for memory read-first, write policy, and session-close is implemented.
 - Skill pack for memory capture/recall/hygiene/bootstrap is implemented.
 
@@ -36,12 +42,15 @@ Maintenance:
 - Shared test environment isolation helper prevents env leakage across subprocess-oriented tests.
 - MCP memory server tests cover contract declarations, core read/write/prune behavior, and malformed project-memory handling.
 - Bootstrap tests cover global/per-server MCP auto-start disable controls.
+- Session lifecycle tests cover session state persistence, context composition, and close semantics.
+- Runtime plugin tests cover hook dispatch, env disable, and timeout behavior.
+- MCP server lifecycle tests cover built-entrypoint shutdown on stdin close, SIGTERM, and SIGINT.
 - Memory-context unit tests cover source assembly, malformed JSON failures, and env toggle behavior.
 
 ## Known Limits
 
 - No provider auto-discovery beyond configured executable.
 - Auth check remains heuristic and depends on provider output text patterns.
-- No plugin architecture yet.
+- Runtime plugins are local-only and event-limited (`session-start/context-build/turn-complete/session-close`).
 - No multi-agent orchestration yet.
 - Explicit MCP serve command currently covers only first-party memory server.

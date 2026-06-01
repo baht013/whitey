@@ -14,6 +14,8 @@ Whitey is a minimal CLI orchestrator for Copilot execution.
 - Router: `src/cli/router.ts`
 - CLI dispatch and command handlers: `src/cli/index.ts`
 - Executor: `src/runtime/executor.ts`
+- Session lifecycle: `src/runtime/sessionLifecycle.ts`
+- Runtime plugins: `src/runtime/plugins.ts`
 - Memory context: `src/runtime/memoryContext.ts`
 - Provider: `src/runtime/provider/copilotCli.ts`
 - History: `src/runtime/history.ts`

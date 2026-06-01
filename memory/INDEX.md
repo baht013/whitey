@@ -24,3 +24,6 @@ Each page points to canonical docs or source modules. Keep this directory short,
 - CLI memory parity commands (`project-memory`, `notepad`).
 - MCP serve command (`whitey mcp-serve memory`).
 - Managed AGENTS bootstrap (`whitey agents-init`).
+- Session lifecycle state/log flow for `whitey run`.
+- Local runtime hook plugins (`.whitey/hooks/*.mjs`) and plugin-state storage.
+- MCP stdio lifecycle shutdown/telemetry controls.

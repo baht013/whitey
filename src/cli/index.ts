@@ -10,6 +10,14 @@ import { runPrompt } from "../runtime/executor.js";
 import { persistRun, readHistory } from "../runtime/history.js";
 import { getCopilotStatus } from "../runtime/status.js";
 import { isMemoryContextEnabled } from "../runtime/memoryContext.js";
+import { dispatchRuntimePluginEvent } from "../runtime/plugins.js";
+import {
+  appendLifecycleLog,
+  buildWhiteySessionStartContext,
+  closeWhiteySession,
+  startWhiteySession
+} from "../runtime/sessionLifecycle.js";
+import type { WhiteySessionCloseOutcome } from "../types/index.js";
 
 function print(message: string): void {
   process.stdout.write(`${message}\n`);
@@ -79,6 +87,7 @@ async function commandHistory(cwd: string, limit: number, json: boolean): Promis
 
 async function commandRun(parsed: ReturnType<typeof parseArgs>, cwd: string): Promise<number> {
   const prompt = parsed.prompt || "";
+  const useMemoryContext = !parsed.noMemory && isMemoryContextEnabled();
 
   const approval = await requestApproval({
     prompt,
@@ -116,38 +125,116 @@ async function commandRun(parsed: ReturnType<typeof parseArgs>, cwd: string): Pr
     return 3;
   }
 
-  const result = await runPrompt({
-    prompt,
-    cwd,
-    timeoutMs: parsed.timeoutMs,
-    verbose: parsed.verbose,
-    useMemoryContext: !parsed.noMemory && isMemoryContextEnabled()
-  });
+  const session = await startWhiteySession(cwd, { provider: "copilot-cli", nativeMode: false });
+  let closeOutcome: WhiteySessionCloseOutcome = {
+    status: "runtime_error",
+    exitCode: 1,
+    summary: "Run did not complete."
+  };
 
-  const record = await persistRun(cwd, prompt, result);
-
-  if (parsed.json) {
-    printJson({
-      command: "run",
-      ok: result.status === "success",
-      result,
-      record
+  try {
+    const sessionEvent = await dispatchRuntimePluginEvent(cwd, "session-start", {
+      sessionId: session.sessionId,
+      context: { provider: "copilot-cli" }
     });
+    for (const failure of sessionEvent.failures) {
+      printErr(`Plugin ${failure.plugin} failed during session-start: ${failure.error}`);
+    }
+
+    const startupContext = await buildWhiteySessionStartContext(cwd, session, { useMemoryContext });
+    const contextEvent = await dispatchRuntimePluginEvent(cwd, "context-build", {
+      sessionId: session.sessionId,
+      context: {
+        useMemoryContext,
+        contextLength: startupContext.length
+      }
+    });
+    for (const failure of contextEvent.failures) {
+      printErr(`Plugin ${failure.plugin} failed during context-build: ${failure.error}`);
+    }
+
+    const result = await runPrompt({
+      prompt,
+      cwd,
+      timeoutMs: parsed.timeoutMs,
+      verbose: parsed.verbose,
+      useMemoryContext,
+      startupContext
+    });
+    const record = await persistRun(cwd, prompt, result);
+    closeOutcome = {
+      status: result.status,
+      exitCode: result.exitCode,
+      summary: result.summary,
+      runId: record.id
+    };
+    await appendLifecycleLog(cwd, {
+      schemaVersion: "1",
+      event: "turn-complete",
+      timestamp: new Date().toISOString(),
+      sessionId: session.sessionId,
+      cwd,
+      source: "whitey-run",
+      payload: {
+        runId: record.id,
+        status: result.status,
+        exitCode: result.exitCode
+      }
+    });
+
+    const turnEvent = await dispatchRuntimePluginEvent(cwd, "turn-complete", {
+      sessionId: session.sessionId,
+      context: {
+        runId: record.id,
+        status: result.status,
+        exitCode: result.exitCode
+      }
+    });
+    for (const failure of turnEvent.failures) {
+      printErr(`Plugin ${failure.plugin} failed during turn-complete: ${failure.error}`);
+    }
+
+    if (parsed.json) {
+      printJson({
+        command: "run",
+        ok: result.status === "success",
+        result,
+        record
+      });
+      return mapExitCode(result.status);
+    }
+
+    if (result.stdout.trim()) {
+      print(result.stdout.trim());
+    }
+    if (result.stderr.trim()) {
+      printErr(result.stderr.trim());
+    }
+
+    print(`Run: ${record.id}`);
+    print(`Status: ${result.status}`);
+    print(`Duration(ms): ${result.durationMs}`);
+
     return mapExitCode(result.status);
+  } finally {
+    try {
+      await closeWhiteySession(cwd, session.sessionId, closeOutcome, { useMemoryContext });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to close session.";
+      printErr(`Session close warning: ${message}`);
+    }
+    const closeEvent = await dispatchRuntimePluginEvent(cwd, "session-close", {
+      sessionId: session.sessionId,
+      context: {
+        status: closeOutcome.status,
+        exitCode: closeOutcome.exitCode,
+        runId: closeOutcome.runId
+      }
+    });
+    for (const failure of closeEvent.failures) {
+      printErr(`Plugin ${failure.plugin} failed during session-close: ${failure.error}`);
+    }
   }
-
-  if (result.stdout.trim()) {
-    print(result.stdout.trim());
-  }
-  if (result.stderr.trim()) {
-    printErr(result.stderr.trim());
-  }
-
-  print(`Run: ${record.id}`);
-  print(`Status: ${result.status}`);
-  print(`Duration(ms): ${result.durationMs}`);
-
-  return mapExitCode(result.status);
 }
 
 async function ensureReadableCwd(cwd: string): Promise<void> {
