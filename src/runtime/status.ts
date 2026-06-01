@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import type { CopilotStatusCheckResult, CopilotStatusReport } from "../types.js";
+import type { CopilotStatusCheckResult, CopilotStatusReport } from "../types/index.js";
 
 function runCheck(command: string, args: string[], timeoutMs = 6000): Promise<CopilotStatusCheckResult> {
   return new Promise((resolve) => {

@@ -10,8 +10,9 @@
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/cli.ts",
     "start": "node dist/cli.js",
+    "mcp:memory": "tsx src/mcp/memory-server.ts",
     "check": "tsc --noEmit -p tsconfig.json",
-    "test": "tsx --test src/*.test.ts src/**/*.test.ts"
+    "test": "tsx --test src/**/__tests__/**/*.test.ts"
   },
   "engines": {
     "node": ">=20"
@@ -26,5 +27,8 @@
     "@types/node": "^24.0.0",
     "tsx": "^4.20.0",
     "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0"
   }
 }

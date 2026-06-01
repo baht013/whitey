@@ -1,4 +1,4 @@
-import type { RunRequest, RunResult } from "../types.js";
+import type { RunRequest, RunResult } from "../types/index.js";
 import { executeWithCopilot } from "./provider/copilotCli.js";
 
 export interface RunPromptDependencies {

@@ -1,6 +1,6 @@
 {
   "snapshotDate": "2026-06-01",
-  "phase": "phase-2-core-hardening",
+  "phase": "phase-2-mcp-memory",
   "implemented": {
     "singleRunExecution": true,
     "copilotProvider": true,
@@ -11,6 +11,9 @@
     "integrationTests": true,
     "jsonOutputMode": true,
     "authAwareStatusCheck": true,
+    "mcpMemoryServer": true,
+    "memoryPromptPack": true,
+    "memorySkillPack": true,
     "strictOptionValidation": true,
     "timeoutEscalation": true
   },
@@ -19,6 +22,7 @@
     "pluginsAndHooks": true,
     "hud": true,
     "webUi": true,
-    "multiProviderRuntime": true
+    "multiProviderRuntime": true,
+    "cliMcpServeParity": true
   }
 }

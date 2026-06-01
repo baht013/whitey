@@ -1,11 +1,11 @@
 import { access } from "node:fs/promises";
 import { constants } from "node:fs";
 import process from "node:process";
-import { parseArgs, helpText } from "./core/router.js";
-import { requestApproval } from "./core/approval.js";
-import { runPrompt } from "./core/executor.js";
-import { persistRun, readHistory } from "./core/history.js";
-import { getCopilotStatus } from "./core/status.js";
+import { parseArgs, helpText } from "./router.js";
+import { requestApproval } from "../runtime/approval.js";
+import { runPrompt } from "../runtime/executor.js";
+import { persistRun, readHistory } from "../runtime/history.js";
+import { getCopilotStatus } from "../runtime/status.js";
 
 function print(message: string): void {
   process.stdout.write(`${message}\n`);

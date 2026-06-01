@@ -5,15 +5,22 @@ Whitey is a lightweight CLI orchestration layer with a single executor provider 
 ## Runtime Modules
 
 - `src/cli.ts`: thin executable wrapper.
-- `src/app.ts`: process command dispatch and command handlers.
-- `src/core/router.ts`: argument parsing and command selection.
-- `src/core/approval.ts`: risk assessment and approval handling.
-- `src/core/executor.ts`: normalized run execution and result shaping.
-- `src/core/provider/copilotCli.ts`: subprocess invocation of Copilot CLI.
-- `src/core/status.ts`: command and auth readiness checks for Copilot.
-- `src/core/history.ts`: append-only history + transcript persistence.
-- `src/core/fs.ts`: storage path helpers for `.whitey/`.
-- `src/types.ts`: shared contracts.
+- `src/cli/index.ts`: process command dispatch and command handlers.
+- `src/cli/router.ts`: argument parsing and command selection.
+- `src/runtime/approval.ts`: risk assessment and approval handling.
+- `src/runtime/executor.ts`: normalized run execution and result shaping.
+- `src/runtime/provider/copilotCli.ts`: subprocess invocation of Copilot CLI.
+- `src/runtime/status.ts`: command and auth readiness checks for Copilot.
+- `src/runtime/history.ts`: append-only history + transcript persistence.
+- `src/utils/fs.ts`: storage path helpers for `.whitey/`.
+- `src/types/index.ts`: shared contracts.
+
+## MCP Modules
+
+- `src/mcp/memory-server.ts`: stdio MCP server for project memory and notepad tools.
+- `src/mcp/bootstrap.ts`: MCP stdio auto-start lifecycle helper.
+- `src/mcp/memory-validation.ts`: memory-specific argument validation.
+- `src/mcp/paths.ts`: working-directory resolution for MCP operations.
 
 ## Flow
 

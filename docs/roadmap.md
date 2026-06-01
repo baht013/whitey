@@ -10,13 +10,16 @@
 - Integration tests with mocked Copilot subprocess behavior
 - JSON output mode for `run`, `history`, and `status`
 - Auth-aware status checks (command + auth readiness)
+- Memory MCP server for persistent project memory and notepad operations
+- Prompt pack for memory read/write/session-close behavior
+- Skill pack for memory bootstrap/recall/capture/hygiene workflows
 
 ## Planned Next
 
 1. Add explicit provider adapter interface for multiple backends.
 2. Improve auth diagnostics with provider-specific parsing and fallback strategies.
 3. Add optional machine-readable error taxonomy in JSON mode.
-4. Add prompt packs and skill-style command presets.
+4. Add MCP server launcher parity from CLI for first-party servers.
 
 ## Deferred by Design
 

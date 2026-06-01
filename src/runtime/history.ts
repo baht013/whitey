@@ -1,8 +1,8 @@
 import { appendFile, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
-import { ensureStorage, historyFile, runsDir } from "./fs.js";
-import type { RunRecord, RunResult } from "../types.js";
+import { ensureStorage, historyFile, runsDir } from "../utils/fs.js";
+import type { RunRecord, RunResult } from "../types/index.js";
 
 export function makePromptDigest(prompt: string): string {
   return createHash("sha256").update(prompt).digest("hex").slice(0, 16);

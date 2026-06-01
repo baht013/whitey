@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { runPrompt } from "./executor.js";
-import type { RunRequest } from "../types.js";
+import { runPrompt } from "../executor.js";
+import type { RunRequest } from "../../types/index.js";
 
 const baseRequest: RunRequest = {
   prompt: "hello",

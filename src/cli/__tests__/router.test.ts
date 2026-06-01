@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseArgs } from "./router.js";
+import { parseArgs } from "../router.js";
 
 test("parseArgs defaults to help when run has no prompt", () => {
   const parsed = parseArgs(["run"]);

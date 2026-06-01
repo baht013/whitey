@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { mkdtemp } from "node:fs/promises";
-import { persistRun, readHistory } from "./history.js";
-import type { RunResult } from "../types.js";
+import { persistRun, readHistory } from "../history.js";
+import type { RunResult } from "../../types/index.js";
 
 async function makeTempCwd(): Promise<string> {
   return mkdtemp(path.join(os.tmpdir(), "whitey-test-"));

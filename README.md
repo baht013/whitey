@@ -8,6 +8,7 @@ A lightweight Copilot-first CLI runner inspired by oh-my-codex, focused on core 
 - Minimal command router
 - Local run history in `.whitey/`
 - Risk-based approval prompts
+- Memory MCP server with project-memory and notepad tools
 
 ## Quick Start
 
@@ -21,6 +22,8 @@ A lightweight Copilot-first CLI runner inspired by oh-my-codex, focused on core 
    - `npm run start -- "your prompt"`
 5. Run tests:
    - `npm test`
+6. Launch memory MCP server:
+   - `npm run mcp:memory`
 
 ## Commands
 
@@ -42,9 +45,15 @@ JSON automation mode:
 ## Project Guides
 
 - Full docs: `docs/README.md`
+- MCP memory server guide: `docs/mcp-memory-server.md`
 - Implemented state snapshot: `state/implemented.md`
 - Feature matrix: `state/features.json`
 - Wiki-style pointers: `memory/INDEX.md`
 - Repo Copilot instructions: `.github/copilot-instructions.md`
 - Docs session log: `docs/session-log.md`
 - Memory change log: `memory/change-log.md`
+
+## Prompt And Skill Assets
+
+- Prompts: `prompts/memory/`
+- Skills: `skills/`

@@ -16,12 +16,16 @@ Maintenance:
 - History persistence writes append-only summary and full transcripts.
 - JSON output mode is available for `run`, `history`, and `status`.
 - Status command now checks both command availability and auth readiness.
+- Memory MCP server is implemented with project-memory and notepad tools.
+- Prompt pack for memory read-first, write policy, and session-close is implemented.
+- Skill pack for memory capture/recall/hygiene/bootstrap is implemented.
 
 ## Quality and Validation
 
 - Typecheck + build scripts are configured.
 - Unit tests exist for router, executor, and history modules.
 - Integration tests cover end-to-end run/history/status command behavior with mocked subprocesses.
+- MCP memory server tests cover contract declarations and core read/write/prune behavior.
 
 ## Known Limits
 
@@ -29,3 +33,4 @@ Maintenance:
 - Auth check remains heuristic and depends on provider output text patterns.
 - No plugin architecture yet.
 - No multi-agent orchestration yet.
+- No generalized MCP serve command parity for all servers yet.

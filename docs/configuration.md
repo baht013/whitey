@@ -16,6 +16,12 @@ Runtime data is project-local under `.whitey/`:
 
 - `.whitey/history.jsonl`: append-only run index.
 - `.whitey/runs/<uuid>.json`: per-run full transcript bundle.
+- `.whitey/memory/project-memory.json`: MCP durable project memory.
+- `.whitey/memory/notepad.md`: MCP notepad sections (priority, working, manual).
+
+## MCP Scripts
+
+- `npm run mcp:memory` launches the stdio memory MCP server.
 
 ## Status Check Behavior
 

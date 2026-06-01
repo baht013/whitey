@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import type { CopilotExecutionInput, CopilotExecutionOutput } from "../../types.js";
+import type { CopilotExecutionInput, CopilotExecutionOutput } from "../../types/index.js";
 
 function buildCopilotArgs(prompt: string): string[] {
   if (process.env.WHITEY_COPILOT_ARGS_TEMPLATE) {

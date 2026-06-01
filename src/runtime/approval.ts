@@ -1,5 +1,5 @@
 import readline from "node:readline";
-import type { RiskAssessment } from "../types.js";
+import type { RiskAssessment } from "../types/index.js";
 
 const RISK_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
   { pattern: /\b(rm|del|remove)\b/i, reason: "delete operation keyword detected" },

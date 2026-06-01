@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { mkdtemp, writeFile, chmod } from "node:fs/promises";
-import { getCopilotStatus } from "./status.js";
+import { getCopilotStatus } from "../status.js";
 
 async function createMockCopilot(mode: "authenticated" | "unauthenticated"): Promise<string> {
   const dir = await mkdtemp(path.join(os.tmpdir(), "whitey-status-"));

@@ -1,0 +1,50 @@
+# MCP Memory Server
+
+This document defines the Whitey memory MCP server implementation and usage.
+
+## Entry Point
+
+- `src/mcp/memory-server.ts`
+
+## Server Name
+
+- `whitey-memory`
+
+## Auto-Start Control
+
+- Environment variable: `WHITEY_MEMORY_SERVER_DISABLE_AUTO_START=1`
+
+## Storage
+
+- `.whitey/memory/project-memory.json`
+- `.whitey/memory/notepad.md`
+
+## Tools
+
+- `project_memory_read`
+- `project_memory_write`
+- `project_memory_add_note`
+- `project_memory_add_directive`
+- `notepad_read`
+- `notepad_write_priority`
+- `notepad_write_working`
+- `notepad_write_manual`
+- `notepad_prune`
+- `notepad_stats`
+
+## Test Coverage
+
+- `src/mcp/__tests__/memory-server.test.ts`
+
+## Prompt + Skill Assets
+
+Prompts:
+- `prompts/memory/read-first.md`
+- `prompts/memory/write-policy.md`
+- `prompts/memory/session-close.md`
+
+Skills:
+- `skills/memory-capture/SKILL.md`
+- `skills/memory-recall/SKILL.md`
+- `skills/memory-hygiene/SKILL.md`
+- `skills/memory-bootstrap/SKILL.md`

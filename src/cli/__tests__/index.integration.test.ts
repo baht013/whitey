@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { mkdtemp, writeFile, chmod, readFile } from "node:fs/promises";
-import { runCli } from "./app.js";
+import { runCli } from "../index.js";
 
 async function createMockCopilot(): Promise<string> {
   const dir = await mkdtemp(path.join(os.tmpdir(), "whitey-cli-"));

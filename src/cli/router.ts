@@ -1,4 +1,4 @@
-import type { ParsedArgs } from "../types.js";
+import type { ParsedArgs } from "../types/index.js";
 
 const DEFAULT_TIMEOUT_MS = 120000;
 const DEFAULT_HISTORY_LIMIT = 10;

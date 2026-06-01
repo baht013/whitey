@@ -32,4 +32,4 @@ Guard:
 - Executor normalizes known textual error signatures into failure.
 
 Reference:
-- `src/core/executor.ts`
+- `src/runtime/executor.ts`

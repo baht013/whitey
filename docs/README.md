@@ -10,6 +10,7 @@ This directory documents the current Whitey implementation and operating model.
 - [Testing Guide](testing.md)
 - [Configuration Reference](configuration.md)
 - [Roadmap](roadmap.md)
+- [MCP Memory Server](mcp-memory-server.md)
 - [Session Log](session-log.md)
 
 ## Maintenance
@@ -25,3 +26,4 @@ Current implementation is intentionally minimal:
 - Approval gate for risky prompt intents
 - Local persistence in `.whitey/`
 - Unit tests for parser, executor behavior, and history storage
+- Memory MCP server with project-memory and notepad tools
