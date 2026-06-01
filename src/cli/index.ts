@@ -2,10 +2,14 @@ import { access } from "node:fs/promises";
 import { constants } from "node:fs";
 import process from "node:process";
 import { parseArgs, helpText } from "./router.js";
+import { runMcpServeCommand } from "./mcp-serve.js";
+import { runMemoryCommand } from "./memory-parity.js";
+import { runAgentsInitCommand } from "./agents-init.js";
 import { requestApproval } from "../runtime/approval.js";
 import { runPrompt } from "../runtime/executor.js";
 import { persistRun, readHistory } from "../runtime/history.js";
 import { getCopilotStatus } from "../runtime/status.js";
+import { isMemoryContextEnabled } from "../runtime/memoryContext.js";
 
 function print(message: string): void {
   process.stdout.write(`${message}\n`);
@@ -116,7 +120,8 @@ async function commandRun(parsed: ReturnType<typeof parseArgs>, cwd: string): Pr
     prompt,
     cwd,
     timeoutMs: parsed.timeoutMs,
-    verbose: parsed.verbose
+    verbose: parsed.verbose,
+    useMemoryContext: !parsed.noMemory && isMemoryContextEnabled()
   });
 
   const record = await persistRun(cwd, prompt, result);
@@ -176,6 +181,25 @@ export async function runCli(argv: string[], cwd = process.cwd()): Promise<numbe
 
   if (parsed.command === "history") {
     return commandHistory(cwd, parsed.historyLimit, parsed.json);
+  }
+
+  if (parsed.command === "mcp-serve") {
+    return runMcpServeCommand(parsed.mcpServer);
+  }
+
+  if (parsed.command === "project-memory" || parsed.command === "notepad") {
+    return runMemoryCommand(parsed.command, parsed.memoryAction, parsed.memoryInput, cwd, parsed.json);
+  }
+
+  if (parsed.command === "agents-init") {
+    return runAgentsInitCommand({
+      targetPath: parsed.agentsInitPath,
+      cwd,
+      dryRun: parsed.dryRun,
+      force: parsed.force,
+      verbose: parsed.verbose,
+      json: parsed.json
+    });
   }
 
   return commandRun(parsed, cwd);

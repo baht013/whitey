@@ -47,3 +47,43 @@ test("runPrompt preserves non-zero executor exit code", async () => {
   assert.equal(result.status, "executor_error");
   assert.equal(result.exitCode, 124);
 });
+
+test("runPrompt prepends memory context when enabled", async () => {
+  let prompt = "";
+  await runPrompt(baseRequest, {
+    buildMemoryContext: async () => "[Whitey project memory]\ntech stack: TypeScript",
+    execute: async (input) => {
+      prompt = input.prompt;
+      return { exitCode: 0, stdout: "ok", stderr: "" };
+    }
+  });
+
+  assert.match(prompt, /^\[Whitey project memory\]/);
+  assert.match(prompt, /\[User request\]\nhello$/);
+});
+
+test("runPrompt skips memory context when disabled in request", async () => {
+  let prompt = "";
+  await runPrompt({ ...baseRequest, useMemoryContext: false }, {
+    buildMemoryContext: async () => "[Whitey project memory]\ntech stack: TypeScript",
+    execute: async (input) => {
+      prompt = input.prompt;
+      return { exitCode: 0, stdout: "ok", stderr: "" };
+    }
+  });
+
+  assert.equal(prompt, "hello");
+});
+
+test("runPrompt returns validation_error for malformed memory context source", async () => {
+  const result = await runPrompt(baseRequest, {
+    buildMemoryContext: async () => {
+      throw new SyntaxError("Invalid JSON");
+    },
+    execute: async () => ({ exitCode: 0, stdout: "ok", stderr: "" })
+  });
+
+  assert.equal(result.status, "validation_error");
+  assert.equal(result.exitCode, 2);
+  assert.equal(result.summary, "Invalid project memory JSON.");
+});

@@ -5,6 +5,9 @@
 - Parse logic: `src/cli/router.ts`
 - Help text: `src/cli/router.ts`
 - Dispatch flow: `src/cli/index.ts`
+- Memory CLI parity handlers: `src/cli/memory-parity.ts`
+- MCP serve command handler: `src/cli/mcp-serve.ts`
+- AGENTS bootstrap handler: `src/cli/agents-init.ts`
 - Executable wrapper: `src/cli.ts`
 
 ## Safety
@@ -15,7 +18,10 @@
 
 - Storage path helpers: `src/utils/fs.ts`
 - Record persistence + history retrieval: `src/runtime/history.ts`
-- MCP memory storage operations: `src/mcp/memory-server.ts`
+- Run memory-context assembly: `src/runtime/memoryContext.ts`
+- MCP memory tool handlers: `src/mcp/memory-tools.ts`
+- MCP memory server assembly: `src/mcp/memory-stdio.ts`
+- MCP memory entrypoint + auto-start: `src/mcp/memory-server.ts`
 
 ## Testing
 
@@ -25,6 +31,8 @@
 - Status tests: `src/runtime/__tests__/status.test.ts`
 - Integration tests: `src/cli/__tests__/index.integration.test.ts`
 - MCP memory tests: `src/mcp/__tests__/memory-server.test.ts`
+- Memory context tests: `src/runtime/__tests__/memoryContext.test.ts`
+- MCP bootstrap tests: `src/mcp/__tests__/bootstrap.test.ts`
 - Test environment helper: `src/test-support/env.ts`
 
 ## Prompts And Skills

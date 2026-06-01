@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
-import { mkdtemp, writeFile, chmod, readFile } from "node:fs/promises";
+import { mkdtemp, writeFile, chmod, readFile, mkdir } from "node:fs/promises";
 import { runCli } from "../index.js";
 import { withEnv } from "../../test-support/env.js";
 
@@ -127,4 +127,90 @@ test("history command json mode returns structured entries", async () => {
     assert.ok(payload.count >= 1);
     assert.match(payload.entries[0]?.promptPreview || "", /first history record/);
   });
+});
+
+test("run injects memory context by default and preserves original history prompt", async () => {
+  const cwd = await mkdtemp(path.join(os.tmpdir(), "whitey-run-memory-"));
+  const mockCopilot = await createMockCopilot();
+  await mkdir(path.join(cwd, ".whitey", "memory"), { recursive: true });
+  await writeFile(
+    path.join(cwd, ".whitey", "memory", "project-memory.json"),
+    JSON.stringify(
+      {
+        techStack: "TypeScript",
+        conventions: "Keep handlers pure",
+        build: "npm run build",
+        directives: [{ directive: "Always run tests", priority: "high", timestamp: new Date().toISOString() }],
+        notes: [{ category: "ops", content: "Ship quickly", timestamp: new Date().toISOString() }]
+      },
+      null,
+      2
+    ),
+    "utf8"
+  );
+  await writeFile(path.join(cwd, ".whitey", "memory", "notepad.md"), "## PRIORITY\nFinish this today\n", "utf8");
+
+  await withEnv({ WHITEY_COPILOT_CMD: mockCopilot, WHITEY_COPILOT_ARGS_TEMPLATE: undefined }, async () => {
+    const captured = await withCapturedOutput(() => runCli(["run", "ship release", "--yes", "--json"], cwd));
+    assert.equal(captured.result, 0);
+    const payload = JSON.parse(captured.stdout.trim()) as { result: { stdout: string } };
+    assert.match(payload.result.stdout, /\[Whitey project memory\]/);
+    assert.match(payload.result.stdout, /\[Whitey priority notes\]/);
+    assert.match(payload.result.stdout, /\[User request\]\nship release/);
+
+    const historyRaw = await readFile(path.join(cwd, ".whitey", "history.jsonl"), "utf8");
+    assert.match(historyRaw, /ship release/);
+    assert.doesNotMatch(historyRaw, /\[Whitey project memory\]/);
+  });
+});
+
+test("run --no-memory bypasses memory context injection", async () => {
+  const cwd = await mkdtemp(path.join(os.tmpdir(), "whitey-run-no-memory-"));
+  const mockCopilot = await createMockCopilot();
+  await mkdir(path.join(cwd, ".whitey", "memory"), { recursive: true });
+  await writeFile(path.join(cwd, ".whitey", "memory", "project-memory.json"), "{\"techStack\":\"TypeScript\"}", "utf8");
+
+  await withEnv({ WHITEY_COPILOT_CMD: mockCopilot, WHITEY_COPILOT_ARGS_TEMPLATE: undefined }, async () => {
+    const captured = await withCapturedOutput(() => runCli(["run", "plain prompt", "--yes", "--no-memory", "--json"], cwd));
+    assert.equal(captured.result, 0);
+    const payload = JSON.parse(captured.stdout.trim()) as { result: { stdout: string } };
+    assert.match(payload.result.stdout, /^MOCK_RESPONSE:plain prompt/m);
+    assert.doesNotMatch(payload.result.stdout, /\[Whitey project memory\]/);
+  });
+});
+
+test("project-memory command writes and reads project memory", async () => {
+  const cwd = await mkdtemp(path.join(os.tmpdir(), "whitey-project-memory-cli-"));
+
+  const writeCaptured = await withCapturedOutput(() =>
+    runCli(["project-memory", "write", "--input", "{\"memory\":{\"techStack\":\"TypeScript\"}}", "--json"], cwd)
+  );
+  assert.equal(writeCaptured.result, 0);
+
+  const readCaptured = await withCapturedOutput(() => runCli(["project-memory", "read", "--json"], cwd));
+  assert.equal(readCaptured.result, 0);
+  const payload = JSON.parse(readCaptured.stdout.trim()) as { ok: boolean; result: { techStack: string } };
+  assert.equal(payload.ok, true);
+  assert.equal(payload.result.techStack, "TypeScript");
+});
+
+test("agents-init creates managed file and preserves manual section on refresh", async () => {
+  const cwd = await mkdtemp(path.join(os.tmpdir(), "whitey-agents-init-"));
+
+  const firstRun = await withCapturedOutput(() => runCli(["agents-init", "--json"], cwd));
+  assert.equal(firstRun.result, 0);
+  const firstPayload = JSON.parse(firstRun.stdout.trim()) as { target: string };
+  const original = await readFile(firstPayload.target, "utf8");
+  const manualReplaced = original.replace(
+    "<!-- WHITEY_MANUAL_START -->\nAdd project-specific manual notes below. This section is preserved on refresh.\n<!-- WHITEY_MANUAL_END -->",
+    "<!-- WHITEY_MANUAL_START -->\nKeep this manual note.\n<!-- WHITEY_MANUAL_END -->"
+  );
+  await writeFile(firstPayload.target, manualReplaced, "utf8");
+
+  const secondRun = await withCapturedOutput(() => runCli(["agents-init", "--json"], cwd));
+  assert.equal(secondRun.result, 0);
+  const secondPayload = JSON.parse(secondRun.stdout.trim()) as { backup: string | null };
+  assert.ok(secondPayload.backup);
+  const refreshed = await readFile(firstPayload.target, "utf8");
+  assert.match(refreshed, /Keep this manual note\./);
 });

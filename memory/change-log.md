@@ -9,3 +9,4 @@ Track pointer-map updates for quick navigation history.
 | 2026-06-01 | memory/commands.md | Added JSON-mode command examples for automation workflows |
 | 2026-06-01 | memory/overview.md, memory/where-to-find.md, memory/troubleshooting.md | Migrated pointers to cli/runtime layout and added MCP memory references |
 | 2026-06-01 | memory/where-to-find.md, memory/troubleshooting.md | Added pointers for test env helper and malformed project-memory troubleshooting |
+| 2026-06-01 | memory/INDEX.md, memory/overview.md, memory/where-to-find.md, memory/troubleshooting.md, memory/commands.md | Added pointers and command examples for memory-context runtime, MCP serve command, CLI memory parity, and agents-init behavior |

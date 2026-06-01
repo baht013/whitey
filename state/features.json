@@ -1,6 +1,6 @@
 {
   "snapshotDate": "2026-06-01",
-  "phase": "phase-2-mcp-memory",
+  "phase": "phase-2-memory-context-cli-parity",
   "implemented": {
     "singleRunExecution": true,
     "copilotProvider": true,
@@ -17,14 +17,18 @@
     "strictOptionValidation": true,
     "timeoutEscalation": true,
     "testEnvironmentIsolation": true,
-    "mcpMemoryValidation": true
+    "mcpMemoryValidation": true,
+    "runMemoryContextInjection": true,
+    "mcpServeCommand": true,
+    "memoryCliParityCommands": true,
+    "agentsTemplateBootstrap": true,
+    "globalMcpAutoStartDisable": true
   },
   "notImplemented": {
     "teamOrchestration": true,
     "pluginsAndHooks": true,
     "hud": true,
     "webUi": true,
-    "multiProviderRuntime": true,
-    "cliMcpServeParity": true
+    "multiProviderRuntime": true
   }
 }

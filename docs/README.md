@@ -27,3 +27,6 @@ Current implementation is intentionally minimal:
 - Local persistence in `.whitey/`
 - Unit tests for parser, executor behavior, and history storage
 - Memory MCP server with project-memory and notepad tools
+- Run-time memory context injection with opt-out controls
+- CLI parity commands for memory operations and MCP serving
+- Managed AGENTS template bootstrap command

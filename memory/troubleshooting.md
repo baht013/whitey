@@ -38,9 +38,23 @@ Reference:
 
 Symptom:
 - MCP memory tools return `Invalid project memory JSON.`
+- `whitey run` returns validation error when memory context is enabled.
 
 Check:
 - `.whitey/memory/project-memory.json`
 
 Fix:
 - Restore the file to a valid JSON object before using project-memory tools.
+- Use `--no-memory` (or `WHITEY_MEMORY_CONTEXT=0`) as a temporary bypass for `run`.
+
+## AGENTS.md Not Overwritten
+
+Symptom:
+- `whitey agents-init` reports unmanaged `AGENTS.md`.
+
+Check:
+- Existing file does not contain Whitey managed markers.
+
+Fix:
+- Re-run with `--force` to overwrite unmanaged files.
+- Existing content will be backed up under `.whitey/backups/agents-init/`.

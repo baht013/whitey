@@ -4,7 +4,9 @@ This document defines the Whitey memory MCP server implementation and usage.
 
 ## Entry Point
 
-- `src/mcp/memory-server.ts`
+- Auto-start entrypoint: `src/mcp/memory-server.ts`
+- Server builder: `src/mcp/memory-stdio.ts`
+- Tool handlers: `src/mcp/memory-tools.ts`
 
 ## Server Name
 
@@ -12,7 +14,13 @@ This document defines the Whitey memory MCP server implementation and usage.
 
 ## Auto-Start Control
 
+- Environment variable: `WHITEY_MCP_SERVER_DISABLE_AUTO_START=1` (global)
 - Environment variable: `WHITEY_MEMORY_SERVER_DISABLE_AUTO_START=1`
+
+## Explicit Serve Command
+
+- `whitey mcp-serve memory`
+- Equivalent script: `npm run mcp:memory`
 
 ## Storage
 
@@ -20,6 +28,8 @@ This document defines the Whitey memory MCP server implementation and usage.
 - `.whitey/memory/notepad.md`
 
 Malformed project-memory JSON returns an explicit tool error instead of silently replacing memory content.
+
+Run-time memory-context injection follows the same strictness: malformed project-memory JSON returns a run validation error.
 
 ## Tools
 
@@ -37,6 +47,24 @@ Malformed project-memory JSON returns an explicit tool error instead of silently
 ## Test Coverage
 
 - `src/mcp/__tests__/memory-server.test.ts`
+- `src/mcp/__tests__/bootstrap.test.ts`
+
+## External Client Configuration
+
+Minimal MCP client snippet:
+
+```json
+{
+  "mcpServers": {
+    "whitey_memory": {
+      "command": "whitey",
+      "args": ["mcp-serve", "memory"]
+    }
+  }
+}
+```
+
+Template location: `templates/mcp.json`.
 
 ## Prompt + Skill Assets
 

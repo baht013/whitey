@@ -17,3 +17,10 @@ This directory is a wiki-style pointer map for quickly finding implementation de
 ## Pointer Rule
 
 Each page points to canonical docs or source modules. Keep this directory short, navigable, and up to date.
+
+## Recent Focus
+
+- Run-time memory context injection (`whitey run` + `.whitey/memory`).
+- CLI memory parity commands (`project-memory`, `notepad`).
+- MCP serve command (`whitey mcp-serve memory`).
+- Managed AGENTS bootstrap (`whitey agents-init`).

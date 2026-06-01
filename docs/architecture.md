@@ -7,8 +7,12 @@ Whitey is a lightweight CLI orchestration layer with a single executor provider 
 - `src/cli.ts`: thin executable wrapper.
 - `src/cli/index.ts`: process command dispatch and command handlers.
 - `src/cli/router.ts`: argument parsing and command selection.
+- `src/cli/memory-parity.ts`: direct CLI adapters for memory/notepad tools.
+- `src/cli/mcp-serve.ts`: explicit MCP stdio server launcher command.
+- `src/cli/agents-init.ts`: managed AGENTS template install/refresh command.
 - `src/runtime/approval.ts`: risk assessment and approval handling.
 - `src/runtime/executor.ts`: normalized run execution and result shaping.
+- `src/runtime/memoryContext.ts`: bounded memory context construction for run prompts.
 - `src/runtime/provider/copilotCli.ts`: subprocess invocation of Copilot CLI.
 - `src/runtime/status.ts`: command and auth readiness checks for Copilot.
 - `src/runtime/history.ts`: append-only history + transcript persistence.
@@ -17,8 +21,10 @@ Whitey is a lightweight CLI orchestration layer with a single executor provider 
 
 ## MCP Modules
 
-- `src/mcp/memory-server.ts`: stdio MCP server for project memory and notepad tools.
-- `src/mcp/bootstrap.ts`: MCP stdio auto-start lifecycle helper.
+- `src/mcp/memory-tools.ts`: project-memory + notepad tool contracts and handlers.
+- `src/mcp/memory-stdio.ts`: MCP server assembly for memory tools.
+- `src/mcp/memory-server.ts`: auto-starting memory server entrypoint.
+- `src/mcp/bootstrap.ts`: MCP stdio start and auto-start lifecycle helpers.
 - `src/mcp/memory-validation.ts`: memory-specific argument validation.
 - `src/mcp/paths.ts`: working-directory resolution for MCP operations.
 
@@ -30,10 +36,11 @@ Whitey is a lightweight CLI orchestration layer with a single executor provider 
 
 1. Parse arguments into a normalized command payload.
 2. If command is `run`, evaluate approval policy.
-3. Execute prompt via Copilot CLI provider.
-4. Normalize result into `RunResult` status + timings.
-5. Persist transcript and summary record under `.whitey/`.
-6. Print text output or JSON (`--json`) and set exit code.
+3. Build optional memory context from `.whitey/memory/project-memory.json` and `notepad.md`.
+4. Execute prompt via Copilot CLI provider.
+5. Normalize result into `RunResult` status + timings.
+6. Persist transcript and summary record under `.whitey/`.
+7. Print text output or JSON (`--json`) and set exit code.
 
 ## Design Constraints
 

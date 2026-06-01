@@ -16,8 +16,14 @@ Maintenance:
 - History persistence writes append-only summary and full transcripts.
 - JSON output mode is available for `run`, `history`, and `status`.
 - Status command now checks both command availability and auth readiness.
+- Run executor now prepends bounded memory context from project-memory + notepad priority sections by default.
+- Memory context injection can be disabled with `--no-memory` or `WHITEY_MEMORY_CONTEXT=0`.
 - Memory MCP server is implemented with project-memory and notepad tools.
 - Memory MCP server surfaces malformed project-memory JSON as an explicit tool error.
+- `mcp-serve memory` is implemented for explicit stdio MCP launch.
+- `project-memory` and `notepad` CLI commands now map directly to memory MCP tools.
+- `agents-init` installs/refreshed managed `AGENTS.md`, preserving manual sections and backing up overwrites.
+- MCP bootstrap supports global auto-start disable (`WHITEY_MCP_SERVER_DISABLE_AUTO_START`) in addition to per-server disable vars.
 - Prompt pack for memory read-first, write policy, and session-close is implemented.
 - Skill pack for memory capture/recall/hygiene/bootstrap is implemented.
 
@@ -26,8 +32,11 @@ Maintenance:
 - Typecheck + build scripts are configured.
 - Unit tests exist for router, executor, and history modules.
 - Integration tests cover end-to-end run/history/status command behavior with mocked subprocesses.
+- Integration tests cover run-time memory context behavior, project-memory CLI parity, and agents-init managed refresh behavior.
 - Shared test environment isolation helper prevents env leakage across subprocess-oriented tests.
 - MCP memory server tests cover contract declarations, core read/write/prune behavior, and malformed project-memory handling.
+- Bootstrap tests cover global/per-server MCP auto-start disable controls.
+- Memory-context unit tests cover source assembly, malformed JSON failures, and env toggle behavior.
 
 ## Known Limits
 
@@ -35,4 +44,4 @@ Maintenance:
 - Auth check remains heuristic and depends on provider output text patterns.
 - No plugin architecture yet.
 - No multi-agent orchestration yet.
-- No generalized MCP serve command parity for all servers yet.
+- Explicit MCP serve command currently covers only first-party memory server.

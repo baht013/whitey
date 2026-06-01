@@ -5,6 +5,7 @@ export interface RunRequest {
   cwd: string;
   timeoutMs: number;
   verbose: boolean;
+  useMemoryContext?: boolean;
 }
 
 export interface RunResult {
@@ -32,15 +33,24 @@ export interface RunRecord {
   transcriptPath: string;
 }
 
+export type CliCommand = "run" | "history" | "status" | "help" | "mcp-serve" | "project-memory" | "notepad" | "agents-init";
+
 export interface ParsedArgs {
-  command: "run" | "history" | "status" | "help";
+  command: CliCommand;
   prompt?: string;
   nonInteractive: boolean;
   assumeYes: boolean;
   timeoutMs: number;
   verbose: boolean;
   json: boolean;
+  noMemory: boolean;
   historyLimit: number;
+  mcpServer?: string;
+  memoryAction?: string;
+  memoryInput?: string;
+  agentsInitPath?: string;
+  dryRun: boolean;
+  force: boolean;
 }
 
 export interface RiskAssessment {

@@ -13,9 +13,15 @@
 - Status: `npm run start -- status`
 - Status JSON: `npm run start -- status --json`
 - Run: `npm run start -- run "your prompt" --yes`
+- Run without memory context: `npm run start -- run "your prompt" --yes --no-memory`
 - Run JSON: `npm run start -- run "your prompt" --yes --json`
 - History: `npm run start -- history --limit 10`
 - History JSON: `npm run start -- history --limit 10 --json`
+- Memory MCP serve: `npm run start -- mcp-serve memory`
+- Project memory read: `npm run start -- project-memory read --json`
+- Project memory write: `npm run start -- project-memory write --input '{"memory":{"techStack":"TypeScript"}}'`
+- Notepad priority write: `npm run start -- notepad write-priority --input '{"content":"Urgent next task"}'`
+- Agents template dry run: `npm run start -- agents-init --dry-run --json`
 
 ## Important Paths
 

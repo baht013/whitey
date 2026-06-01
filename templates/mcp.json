@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "whitey_memory": {
+      "command": "whitey",
+      "args": ["mcp-serve", "memory"]
+    }
+  }
+}

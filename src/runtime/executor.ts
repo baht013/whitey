@@ -1,8 +1,10 @@
 import type { RunRequest, RunResult } from "../types/index.js";
 import { executeWithCopilot } from "./provider/copilotCli.js";
+import { buildRunMemoryContext } from "./memoryContext.js";
 
 export interface RunPromptDependencies {
   execute?: typeof executeWithCopilot;
+  buildMemoryContext?: typeof buildRunMemoryContext;
 }
 
 function hasTextualFailure(stdout: string, stderr: string): boolean {
@@ -40,8 +42,35 @@ export async function runPrompt(
   }
 
   const execute = dependencies.execute ?? executeWithCopilot;
+  const buildMemoryContext = dependencies.buildMemoryContext ?? buildRunMemoryContext;
+  let prompt = request.prompt;
+
+  if (request.useMemoryContext ?? true) {
+    try {
+      const memoryContext = await buildMemoryContext(request.cwd);
+      if (memoryContext.trim().length > 0) {
+        prompt = `${memoryContext}\n\n[User request]\n${request.prompt}`;
+      }
+    } catch (error) {
+      const message = error instanceof SyntaxError
+        ? "Invalid project memory JSON."
+        : (error instanceof Error ? error.message : "Failed to build memory context.");
+      const endedAt = new Date().toISOString();
+      return {
+        status: "validation_error",
+        exitCode: 2,
+        startedAt,
+        endedAt,
+        durationMs: Date.now() - start,
+        summary: message,
+        stdout: "",
+        stderr: message
+      };
+    }
+  }
+
   const result = await execute({
-    prompt: request.prompt,
+    prompt,
     cwd: request.cwd,
     timeoutMs: request.timeoutMs,
     verbose: request.verbose
