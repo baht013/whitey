@@ -11,7 +11,7 @@ Flags:
 - `--timeout-ms <N>`: execution timeout in milliseconds (default 120000)
 - `--yes`: auto-approve risky actions
 - `--non-interactive`: fail if approval is required
-- `--no-memory`: skip automatic memory-context injection for this run
+- `--no-memory`: disable memory for this run (skip memory-context injection and built-in hook memory capture writes)
 - `--verbose`: print executor invocation details to stderr
 - `--json`: emit structured JSON instead of text output
 - `--`: treat all following tokens as prompt text

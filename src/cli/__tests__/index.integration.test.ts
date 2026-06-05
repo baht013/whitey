@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
+import { existsSync } from "node:fs";
 import { mkdtemp, writeFile, chmod, readFile, mkdir } from "node:fs/promises";
 import { runCli } from "../index.js";
 import { withEnv } from "../../test-support/env.js";
@@ -178,6 +179,76 @@ test("run --no-memory bypasses memory context injection", async () => {
     assert.match(payload.result.stdout, /\[Whitey execution session\]/);
     assert.match(payload.result.stdout, /\[User request\]\nplain prompt/);
     assert.doesNotMatch(payload.result.stdout, /\[Whitey project memory\]/);
+    assert.equal(existsSync(path.join(cwd, ".whitey", "memory", "notepad.md")), false);
+  });
+});
+
+test("run turn-complete plugin context includes bounded metadata and memoryEnabled toggle", async () => {
+  const cwd = await mkdtemp(path.join(os.tmpdir(), "whitey-run-hook-context-"));
+  const mockCopilot = await createMockCopilot();
+  await mkdir(path.join(cwd, ".whitey", "hooks"), { recursive: true });
+  await writeFile(
+    path.join(cwd, ".whitey", "hooks", "capture-context.mjs"),
+    `export async function onHookEvent(event, sdk) {
+  if (event.event !== "turn-complete") return;
+  await sdk.state.write("turn-context", event.context || {});
+}`,
+    "utf8"
+  );
+
+  await withEnv({ WHITEY_COPILOT_CMD: mockCopilot, WHITEY_COPILOT_ARGS_TEMPLATE: undefined }, async () => {
+    const enabledRun = await withCapturedOutput(() => runCli(["run", "context on", "--yes", "--json"], cwd));
+    assert.equal(enabledRun.result, 0);
+    const enabledContext = JSON.parse(
+      await readFile(path.join(cwd, ".whitey", "plugin-state", "capture-context", "turn-context.json"), "utf8")
+    ) as { memoryEnabled: boolean; transcriptPath: string; promptPreview: string; durationMs: number };
+    assert.equal(enabledContext.memoryEnabled, true);
+    assert.match(enabledContext.transcriptPath, /\.whitey\/runs\//);
+    assert.equal(typeof enabledContext.promptPreview, "string");
+    assert.equal(typeof enabledContext.durationMs, "number");
+
+    const disabledRun = await withCapturedOutput(() => runCli(["run", "context off", "--yes", "--no-memory", "--json"], cwd));
+    assert.equal(disabledRun.result, 0);
+    const disabledContext = JSON.parse(
+      await readFile(path.join(cwd, ".whitey", "plugin-state", "capture-context", "turn-context.json"), "utf8")
+    ) as { memoryEnabled: boolean };
+    assert.equal(disabledContext.memoryEnabled, false);
+  });
+});
+
+test("run auto memory capture writes when enabled and skips with --no-memory", async () => {
+  const cwdEnabled = await mkdtemp(path.join(os.tmpdir(), "whitey-run-auto-memory-on-"));
+  const cwdDisabled = await mkdtemp(path.join(os.tmpdir(), "whitey-run-auto-memory-off-"));
+  const mockCopilot = await createMockCopilot();
+
+  await withEnv({ WHITEY_COPILOT_CMD: mockCopilot, WHITEY_COPILOT_ARGS_TEMPLATE: undefined }, async () => {
+    const onRun = await withCapturedOutput(() =>
+      runCli(
+        [
+          "run",
+          "Decision: Use sdk.memory for durable notes\nArchitecture: Keep runtime hook dispatch centralized\nConvention: Keep memory writes bounded",
+          "--yes",
+          "--json"
+        ],
+        cwdEnabled
+      )
+    );
+    assert.equal(onRun.result, 0);
+    const projectMemory = await readFile(path.join(cwdEnabled, ".whitey", "memory", "project-memory.json"), "utf8");
+    assert.match(projectMemory, /Use sdk.memory for durable notes/);
+    assert.match(projectMemory, /Keep runtime hook dispatch centralized/);
+    assert.match(projectMemory, /Keep memory writes bounded/);
+
+    const offRun = await withCapturedOutput(
+      () =>
+        runCli(
+          ["run", "Decision: This should not persist when disabled", "--yes", "--no-memory", "--json"],
+          cwdDisabled
+        )
+    );
+    assert.equal(offRun.result, 0);
+    assert.equal(existsSync(path.join(cwdDisabled, ".whitey", "memory", "project-memory.json")), false);
+    assert.equal(existsSync(path.join(cwdDisabled, ".whitey", "memory", "notepad.md")), false);
   });
 });
 

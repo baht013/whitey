@@ -12,6 +12,7 @@
 
 - `WHITEY_MEMORY_CONTEXT`
   - Set to `0` to disable automatic memory-context injection for `whitey run`.
+  - Equivalent to running with `--no-memory` for memory-context behavior.
 
 - `WHITEY_MCP_SERVER_DISABLE_AUTO_START`
   - Set to `1` to disable auto-start for all first-party MCP servers.
@@ -53,6 +54,8 @@ Runtime data is project-local under `.whitey/`:
 - `.whitey/memory/project-memory.json`: MCP durable project memory.
 - `.whitey/memory/notepad.md`: MCP notepad sections (priority, working, manual).
 - `.whitey/backups/agents-init/*.md`: overwritten `AGENTS.md` backups.
+
+`whitey run --no-memory` disables both memory-context prompt injection and built-in runtime memory capture writes for that run.
 
 ## MCP Scripts
 

@@ -73,6 +73,34 @@ Fix:
 - Reduce plugin latency or increase `WHITEY_HOOK_PLUGIN_TIMEOUT_MS`.
 - Disable plugin dispatch temporarily with `WHITEY_HOOK_PLUGINS=0`.
 
+## Memory Capture Not Writing
+
+Symptom:
+- `turn-complete` finished but no new memory notes/directives were persisted.
+
+Check:
+- Run used `--no-memory` or `WHITEY_MEMORY_CONTEXT=0` (memory disabled for that run).
+- Hook log stream `.whitey/logs/hooks-YYYY-MM-DD.jsonl` for `builtin-memory-capture` skip reasons.
+- Candidate output contains explicit markers (`Decision:`, `Convention:`, `Architecture:`, `Memory:`, `Directive:`).
+
+Fix:
+- Re-run without `--no-memory` when capture is desired.
+- Emit explicit marker lines for durable notes/directives.
+- Confirm extracted lines are concise and non-sensitive.
+
+## Plugin sdk.memory Write Error
+
+Symptom:
+- Local plugin throws `Memory is disabled for this run.` on `sdk.memory` writes.
+
+Check:
+- `event.context.memoryEnabled` passed to hook event.
+- CLI invocation includes `--no-memory`.
+
+Fix:
+- Guard write calls with `if (sdk.memory.enabled)`.
+- Keep read-only hook behavior when memory is intentionally disabled.
+
 ## MCP Server Exits Unexpectedly
 
 Symptom:

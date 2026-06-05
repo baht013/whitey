@@ -1,7 +1,13 @@
 import { existsSync } from "node:fs";
 import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
 import { parseNotepadPruneDaysOld } from "./memory-validation.js";
-import { memoryRoot, notepadPath, projectMemoryPath, resolveWorkingDirectory } from "./paths.js";
+import {
+  memoryRoot,
+  notepadPath,
+  projectMemoryPath,
+  resolveProjectMemorySource,
+  resolveWorkingDirectory
+} from "./paths.js";
 
 export interface ProjectMemory {
   techStack?: string;
@@ -13,6 +19,11 @@ export interface ProjectMemory {
 }
 
 type ProjectMemoryReadResult = { ok: true; data: ProjectMemory } | { ok: false; error: string };
+
+const DEFAULT_NOTEPAD_TEMPLATE = "## PRIORITY\n\n## WORKING MEMORY\n\n## MANUAL\n";
+const DEFAULT_HYGIENE_DAYS = 7;
+const MAX_NOTES = 50;
+const MAX_DIRECTIVES = 25;
 
 export function buildMemoryServerTools() {
   return [
@@ -205,6 +216,16 @@ export async function appendNotepadWorkingEntry(
   await writeAtomic(notePath, updated);
 }
 
+export async function ensureNotepadTemplate(workingDirectory: string): Promise<{ created: boolean }> {
+  const notePath = notepadPath(workingDirectory);
+  await mkdir(memoryRoot(workingDirectory), { recursive: true });
+  if (existsSync(notePath)) {
+    return { created: false };
+  }
+  await writeAtomic(notePath, DEFAULT_NOTEPAD_TEMPLATE);
+  return { created: true };
+}
+
 export async function readProjectMemory(filePath: string): Promise<ProjectMemory> {
   if (!existsSync(filePath)) {
     return {};
@@ -233,6 +254,170 @@ async function readProjectMemoryResult(filePath: string): Promise<ProjectMemoryR
   }
 }
 
+function normalizeToken(value: string): string {
+  return value.replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+function toTimestampValue(value: string | undefined): number {
+  if (!value) {
+    return 0;
+  }
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function normalizeNotes(notes: ProjectMemory["notes"] = []): Array<{ category: string; content: string; timestamp: string }> {
+  const deduped = new Map<string, { category: string; content: string; timestamp: string }>();
+  for (const note of notes) {
+    if (!note || typeof note.category !== "string" || typeof note.content !== "string") {
+      continue;
+    }
+    const category = note.category.trim();
+    const content = note.content.trim();
+    if (!category || !content) {
+      continue;
+    }
+    const timestamp = typeof note.timestamp === "string" ? note.timestamp : new Date(0).toISOString();
+    const key = `${normalizeToken(category)}|${normalizeToken(content)}`;
+    const existing = deduped.get(key);
+    if (!existing || toTimestampValue(timestamp) >= toTimestampValue(existing.timestamp)) {
+      deduped.set(key, { category, content, timestamp });
+    }
+  }
+  return [...deduped.values()]
+    .sort((a, b) => toTimestampValue(b.timestamp) - toTimestampValue(a.timestamp))
+    .slice(0, MAX_NOTES);
+}
+
+function directivePriority(value: "high" | "normal" | undefined): number {
+  return value === "high" ? 2 : 1;
+}
+
+function normalizeDirectives(
+  directives: ProjectMemory["directives"] = []
+): Array<{ directive: string; priority: "high" | "normal"; context?: string; timestamp: string }> {
+  const deduped = new Map<string, { directive: string; priority: "high" | "normal"; context?: string; timestamp: string }>();
+  for (const directiveEntry of directives) {
+    if (!directiveEntry || typeof directiveEntry.directive !== "string") {
+      continue;
+    }
+    const directive = directiveEntry.directive.trim();
+    if (!directive) {
+      continue;
+    }
+    const timestamp = typeof directiveEntry.timestamp === "string"
+      ? directiveEntry.timestamp
+      : new Date(0).toISOString();
+    const priority = directiveEntry.priority === "high" ? "high" : "normal";
+    const context = typeof directiveEntry.context === "string" ? directiveEntry.context.trim() : undefined;
+    const key = normalizeToken(directive);
+    const existing = deduped.get(key);
+    if (!existing) {
+      deduped.set(key, { directive, priority, context, timestamp });
+      continue;
+    }
+
+    const existingPriority = directivePriority(existing.priority);
+    const nextPriority = directivePriority(priority);
+    const existingTs = toTimestampValue(existing.timestamp);
+    const nextTs = toTimestampValue(timestamp);
+    const shouldReplace = nextPriority > existingPriority || (nextPriority === existingPriority && nextTs >= existingTs);
+    if (shouldReplace) {
+      deduped.set(key, {
+        directive,
+        priority,
+        context: context || existing.context,
+        timestamp
+      });
+      continue;
+    }
+    if (!existing.context && context) {
+      deduped.set(key, { ...existing, context });
+    }
+  }
+  return [...deduped.values()]
+    .sort((a, b) => toTimestampValue(b.timestamp) - toTimestampValue(a.timestamp))
+    .slice(0, MAX_DIRECTIVES);
+}
+
+export async function applyProjectMemoryHygiene(workingDirectory: string): Promise<{
+  selectedSource: string;
+  notesBefore: number;
+  notesAfter: number;
+  directivesBefore: number;
+  directivesAfter: number;
+}> {
+  const resolution = resolveProjectMemorySource(workingDirectory);
+  const selectedPath = resolution.selected?.path ?? projectMemoryPath(workingDirectory);
+  const result = await readProjectMemoryResult(selectedPath);
+  if (!result.ok) {
+    throw new Error(result.error);
+  }
+
+  const data = result.data;
+  const notesBefore = Array.isArray(data.notes) ? data.notes.length : 0;
+  const directivesBefore = Array.isArray(data.directives) ? data.directives.length : 0;
+  const notes = normalizeNotes(data.notes);
+  const directives = normalizeDirectives(data.directives);
+  const updated: ProjectMemory = {
+    ...data,
+    notes,
+    directives
+  };
+
+  await mkdir(memoryRoot(workingDirectory), { recursive: true });
+  await writeAtomic(projectMemoryPath(workingDirectory), JSON.stringify(updated, null, 2));
+  return {
+    selectedSource: selectedPath,
+    notesBefore,
+    notesAfter: notes.length,
+    directivesBefore,
+    directivesAfter: directives.length
+  };
+}
+
+export async function pruneNotepadWorkingEntries(
+  workingDirectory: string,
+  daysOld = DEFAULT_HYGIENE_DAYS
+): Promise<{ pruned: number; remaining: number; message?: string }> {
+  const notePath = notepadPath(workingDirectory);
+  if (!existsSync(notePath)) {
+    return { pruned: 0, remaining: 0, message: "No notepad file found" };
+  }
+
+  const content = await readFile(notePath, "utf8");
+  const workingSection = extractNotepadSection(content, "working memory");
+  if (!workingSection) {
+    return { pruned: 0, remaining: 0, message: "No working memory entries found" };
+  }
+
+  const cutoff = Date.now() - daysOld * 24 * 60 * 60 * 1000;
+  const lines = workingSection.split("\n");
+  let pruned = 0;
+  const kept: string[] = [];
+  for (const line of lines) {
+    const match = line.match(/^\[(\d{4}-\d{2}-\d{2}T[\d:.]+Z?)\]/);
+    if (!match) {
+      kept.push(line);
+      continue;
+    }
+
+    const entryTime = new Date(match[1]).getTime();
+    if (entryTime < cutoff) {
+      pruned += 1;
+      continue;
+    }
+    kept.push(line);
+  }
+
+  if (pruned > 0) {
+    const updated = replaceSection(content, "working memory", kept.join("\n"));
+    await writeAtomic(notePath, updated);
+  }
+
+  return { pruned, remaining: kept.filter((line) => /^\[/.test(line)).length };
+}
+
 export async function handleMemoryToolCall(request: {
   params: { name: string; arguments?: Record<string, unknown> };
 }) {
@@ -252,7 +437,9 @@ export async function handleMemoryToolCall(request: {
 
   switch (name) {
     case "project_memory_read": {
-      const result = await readProjectMemoryResult(memPath);
+      const selected = resolveProjectMemorySource(wd).selected;
+      const selectedPath = selected?.path;
+      const result = await readProjectMemoryResult(selectedPath ?? memPath);
       if (!result.ok) {
         return errorText(result.error);
       }
@@ -378,46 +565,13 @@ export async function handleMemoryToolCall(request: {
     }
 
     case "notepad_prune": {
-      if (!existsSync(notePath)) {
-        return text({ pruned: 0, message: "No notepad file found" });
-      }
-
       const parsedDays = parseNotepadPruneDaysOld(toolArgs.daysOld);
       if (!parsedDays.ok) {
         return errorText(parsedDays.error);
       }
 
-      const content = await readFile(notePath, "utf8");
-      const workingSection = extractNotepadSection(content, "working memory");
-      if (!workingSection) {
-        return text({ pruned: 0, message: "No working memory entries found" });
-      }
-
-      const cutoff = Date.now() - parsedDays.days * 24 * 60 * 60 * 1000;
-      const lines = workingSection.split("\n");
-      let pruned = 0;
-      const kept: string[] = [];
-      for (const line of lines) {
-        const match = line.match(/^\[(\d{4}-\d{2}-\d{2}T[\d:.]+Z?)\]/);
-        if (!match) {
-          kept.push(line);
-          continue;
-        }
-
-        const entryTime = new Date(match[1]).getTime();
-        if (entryTime < cutoff) {
-          pruned += 1;
-          continue;
-        }
-        kept.push(line);
-      }
-
-      if (pruned > 0) {
-        const updated = replaceSection(content, "working memory", kept.join("\n"));
-        await writeAtomic(notePath, updated);
-      }
-
-      return text({ pruned, remaining: kept.filter((line) => /^\[/.test(line)).length });
+      const result = await pruneNotepadWorkingEntries(wd, parsedDays.days);
+      return text(result);
     }
 
     case "notepad_stats": {

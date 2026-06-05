@@ -4,12 +4,17 @@ import { readdir } from "node:fs/promises";
 import { appendFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { hooksDir, hooksLogFile, pluginStateDir } from "../utils/fs.js";
 import type { WhiteyLifecycleEventName } from "../types/index.js";
+import { handleMemoryToolCall } from "../mcp/memory-tools.js";
+import { onBuiltinMemoryCaptureEvent } from "./memoryCaptureHook.js";
 
 const HOOKS_ENABLED_ENV = "WHITEY_HOOK_PLUGINS";
 const HOOKS_TIMEOUT_ENV = "WHITEY_HOOK_PLUGIN_TIMEOUT_MS";
 const DEFAULT_HOOK_TIMEOUT_MS = 1500;
 
-type HookEvent = {
+const MEMORY_DISABLED_ERROR = "Memory is disabled for this run.";
+const BUILTIN_MEMORY_CAPTURE_PLUGIN = "builtin-memory-capture";
+
+export type HookEvent = {
   schema_version: "1";
   event: WhiteyLifecycleEventName;
   timestamp: string;
@@ -23,7 +28,7 @@ type HookPluginModule = {
   onHookEvent?: (event: HookEvent, sdk: PluginSdk) => Promise<void> | void;
 };
 
-type PluginSdk = {
+export type PluginSdk = {
   log: {
     info: (message: string, data?: Record<string, unknown>) => Promise<void>;
     warn: (message: string, data?: Record<string, unknown>) => Promise<void>;
@@ -39,9 +44,24 @@ type PluginSdk = {
     cwd: string;
     pluginStateDir: string;
   };
+  memory: {
+    enabled: boolean;
+    addNote: (category: string, content: string) => Promise<void>;
+    addDirective: (directive: string, options?: { priority?: "high" | "normal"; context?: string }) => Promise<void>;
+    writeWorking: (content: string) => Promise<void>;
+    readProjectMemory: (
+      section?: "all" | "techStack" | "build" | "conventions" | "structure" | "notes" | "directives"
+    ) => Promise<unknown>;
+    readNotepad: (section?: "all" | "priority" | "working" | "manual") => Promise<unknown>;
+  };
 };
 
-type RuntimePluginDispatchResult = {
+type MemoryToolCallResult = {
+  content?: Array<{ type?: string; text?: string }>;
+  isError?: boolean;
+};
+
+export type RuntimePluginDispatchResult = {
   loaded: number;
   ran: number;
   failures: Array<{ plugin: string; error: string }>;
@@ -69,6 +89,60 @@ function safeName(value: string): string {
 
 function safeStateKey(key: string): string {
   return `${safeName(key)}.json`;
+}
+
+function parseMemoryToolMessage(response: MemoryToolCallResult, fallback: string): string {
+  const text = response.content?.find((item) => item.type === "text")?.text;
+  if (!text) {
+    return fallback;
+  }
+  try {
+    const parsed = JSON.parse(text) as { error?: string };
+    if (parsed && typeof parsed === "object" && typeof parsed.error === "string") {
+      return parsed.error;
+    }
+  } catch {
+    return text;
+  }
+  return fallback;
+}
+
+function parseMemoryToolData(response: MemoryToolCallResult): unknown {
+  const text = response.content?.find((item) => item.type === "text")?.text;
+  if (!text) {
+    return null;
+  }
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return text;
+  }
+}
+
+async function callMemoryTool(
+  cwd: string,
+  name: string,
+  args: Record<string, unknown> = {}
+): Promise<unknown> {
+  const response = (await handleMemoryToolCall({
+    params: {
+      name,
+      arguments: {
+        ...args,
+        workingDirectory: cwd
+      }
+    }
+  })) as MemoryToolCallResult;
+  if (response.isError) {
+    throw new Error(parseMemoryToolMessage(response, `Memory tool failed: ${name}`));
+  }
+  return parseMemoryToolData(response);
+}
+
+function assertMemoryWriteEnabled(enabled: boolean): void {
+  if (!enabled) {
+    throw new Error(MEMORY_DISABLED_ERROR);
+  }
 }
 
 async function writeHookLog(
@@ -108,7 +182,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
   });
 }
 
-async function buildSdk(cwd: string, pluginName: string): Promise<PluginSdk> {
+async function buildSdk(cwd: string, pluginName: string, memoryEnabled: boolean): Promise<PluginSdk> {
   const stateDir = pluginStateDir(cwd, pluginName);
   await mkdir(stateDir, { recursive: true });
   return {
@@ -152,8 +226,78 @@ async function buildSdk(cwd: string, pluginName: string): Promise<PluginSdk> {
     paths: {
       cwd,
       pluginStateDir: stateDir
+    },
+    memory: {
+      enabled: memoryEnabled,
+      addNote: async (category, content) => {
+        assertMemoryWriteEnabled(memoryEnabled);
+        await callMemoryTool(cwd, "project_memory_add_note", { category, content });
+      },
+      addDirective: async (directive, options = {}) => {
+        assertMemoryWriteEnabled(memoryEnabled);
+        await callMemoryTool(cwd, "project_memory_add_directive", {
+          directive,
+          priority: options.priority,
+          context: options.context
+        });
+      },
+      writeWorking: async (content) => {
+        assertMemoryWriteEnabled(memoryEnabled);
+        await callMemoryTool(cwd, "notepad_write_working", { content });
+      },
+      readProjectMemory: async (section = "all") => callMemoryTool(cwd, "project_memory_read", { section }),
+      readNotepad: async (section = "all") => callMemoryTool(cwd, "notepad_read", { section })
     }
   };
+}
+
+function toHookEvent(
+  cwd: string,
+  event: WhiteyLifecycleEventName,
+  context: { sessionId?: string; context?: Record<string, unknown> }
+): HookEvent {
+  return {
+    schema_version: "1",
+    event,
+    timestamp: new Date().toISOString(),
+    source: "whitey-run",
+    session_id: context.sessionId,
+    cwd,
+    context: context.context
+  };
+}
+
+function memoryEnabledFromContext(context?: Record<string, unknown>): boolean {
+  return context?.memoryEnabled !== false;
+}
+
+export async function dispatchBuiltinRuntimeHooks(
+  cwd: string,
+  event: WhiteyLifecycleEventName,
+  context: { sessionId?: string; context?: Record<string, unknown> }
+): Promise<RuntimePluginDispatchResult> {
+  const envelope = toHookEvent(cwd, event, context);
+  const timeout = hookTimeoutMs();
+  try {
+    const sdk = await buildSdk(cwd, BUILTIN_MEMORY_CAPTURE_PLUGIN, memoryEnabledFromContext(context.context));
+    await withTimeout(
+      Promise.resolve(onBuiltinMemoryCaptureEvent(envelope, sdk)),
+      timeout,
+      `Plugin ${BUILTIN_MEMORY_CAPTURE_PLUGIN}`
+    );
+    return { loaded: 1, ran: 1, failures: [] };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown plugin error.";
+    await writeHookLog(cwd, BUILTIN_MEMORY_CAPTURE_PLUGIN, "error", "plugin dispatch failed", {
+      event,
+      error: message
+    });
+    return {
+      loaded: 1,
+      ran: 0,
+      failures: [{ plugin: BUILTIN_MEMORY_CAPTURE_PLUGIN, error: message }]
+    };
+  }
 }
 
 export async function dispatchRuntimePluginEvent(
@@ -177,15 +321,8 @@ export async function dispatchRuntimePluginEvent(
       throw error;
     }
 
-    const envelope: HookEvent = {
-      schema_version: "1",
-      event,
-      timestamp: new Date().toISOString(),
-      source: "whitey-run",
-      session_id: context.sessionId,
-      cwd,
-      context: context.context
-    };
+    const envelope = toHookEvent(cwd, event, context);
+    const memoryEnabled = memoryEnabledFromContext(context.context);
 
     const timeout = hookTimeoutMs();
     const failures: Array<{ plugin: string; error: string }> = [];
@@ -199,7 +336,7 @@ export async function dispatchRuntimePluginEvent(
         if (typeof loaded.onHookEvent !== "function") {
           continue;
         }
-        const sdk = await buildSdk(cwd, pluginName);
+        const sdk = await buildSdk(cwd, pluginName, memoryEnabled);
         await withTimeout(Promise.resolve(loaded.onHookEvent(envelope, sdk)), timeout, `Plugin ${pluginName}`);
         ran += 1;
       } catch (error) {

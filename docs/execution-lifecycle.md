@@ -12,8 +12,10 @@
 8. Provider captures stdout/stderr and enforces timeout.
 9. Executor converts provider output into normalized `RunResult`.
 10. History module writes run transcript + JSONL summary.
-11. Runtime emits `turn-complete`, closes session, writes lifecycle/session-history logs, and optionally appends a concise notepad working-memory summary.
-12. CLI prints final status and exits with mapped code.
+11. Runtime emits `turn-complete` with bounded metadata (`runId`, `summary`, `promptPreview`, `durationMs`, `transcriptPath`, `memoryEnabled`) and runs built-in memory capture before local plugins.
+12. Runtime closes session, emits `session-close` with bounded metadata, and writes lifecycle/session-history logs.
+13. Session close optionally appends a concise notepad working-memory summary only when memory is enabled.
+14. CLI prints final status and exits with mapped code.
 
 ## Failure Modes
 
@@ -21,6 +23,7 @@
 - Unknown command flags -> argument error.
 - Approval required in non-interactive mode -> approval denied.
 - Malformed project-memory JSON when memory context is enabled -> validation error.
+- Built-in memory capture skips writes when `memoryEnabled=false` (for example `--no-memory`).
 - Malformed session state JSON -> explicit runtime error when session lifecycle is read.
 - Runtime plugin failure -> logged warning/error; run execution continues.
 - Copilot process launch error -> executor error.

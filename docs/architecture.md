@@ -15,6 +15,7 @@ Whitey is a lightweight CLI orchestration layer with a single executor provider 
 - `src/runtime/memoryContext.ts`: bounded memory context construction for run prompts.
 - `src/runtime/sessionLifecycle.ts`: active-session state, lifecycle logs, startup context, and close flow.
 - `src/runtime/plugins.ts`: local runtime hook dispatch + plugin SDK.
+- `src/runtime/memoryCaptureHook.ts`: built-in hook-backed memory extraction/capture for turn/session close.
 - `src/runtime/provider/copilotCli.ts`: subprocess invocation of Copilot CLI.
 - `src/runtime/status.ts`: command and auth readiness checks for Copilot.
 - `src/runtime/history.ts`: append-only history + transcript persistence.
@@ -44,8 +45,9 @@ Whitey is a lightweight CLI orchestration layer with a single executor provider 
 5. Execute prompt via Copilot CLI provider.
 6. Normalize result into `RunResult` status + timings.
 7. Persist transcript and summary record under `.whitey/`.
-8. Close session lifecycle and append safe working-memory summary when enabled.
-9. Print text output or JSON (`--json`) and set exit code.
+8. Emit `turn-complete` with bounded context metadata (`runId`, `summary`, `promptPreview`, `durationMs`, `transcriptPath`, `memoryEnabled`) and run built-in memory capture before local plugins.
+9. Close session lifecycle and emit `session-close` with bounded metadata; built-in memory capture writes only when `memoryEnabled=true`.
+10. Print text output or JSON (`--json`) and set exit code.
 
 ## Design Constraints
 

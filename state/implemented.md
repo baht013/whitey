@@ -28,6 +28,10 @@ Maintenance:
 - Session startup context now includes an execution-session section and optional bounded memory context.
 - Session close is idempotent and appends a concise working-memory summary when memory context is enabled.
 - Runtime hook plugins are supported from `.whitey/hooks/*.mjs` with scoped SDK logging/state storage.
+- Runtime hook plugin SDK now includes `sdk.memory` helpers (`addNote`, `addDirective`, `writeWorking`, and bounded read helpers) backed by memory tool handlers.
+- Hook event context for `turn-complete` and `session-close` now includes safe run metadata (`summary`, `promptPreview`, `durationMs`, `transcriptPath`, `memoryEnabled`) without raw stdout/stderr payload injection.
+- A built-in runtime memory capture hook now runs automatically on `turn-complete`/`session-close` when memory is enabled, with bounded extraction, redaction, and dedupe.
+- `whitey run --no-memory` now disables both prompt memory-context injection and built-in runtime memory capture writes for that run.
 - MCP bootstrap now owns lifecycle shutdown on stdin close, signals, transport close, and parent watchdog checks.
 - MCP lifecycle telemetry now writes bounded JSONL under `.whitey/logs/mcp-lifecycle-*.jsonl` (configurable/disable-able via env).
 - Prompt pack for memory read-first, write policy, and session-close is implemented.
@@ -44,8 +48,10 @@ Maintenance:
 - Bootstrap tests cover global/per-server MCP auto-start disable controls.
 - Session lifecycle tests cover session state persistence, context composition, and close semantics.
 - Runtime plugin tests cover hook dispatch, env disable, and timeout behavior.
+- Runtime plugin tests now cover `sdk.memory` write behavior, disabled-memory error behavior, and malformed project-memory surfacing.
 - MCP server lifecycle tests cover built-entrypoint shutdown on stdin close, SIGTERM, and SIGINT.
 - Memory-context unit tests cover source assembly, malformed JSON failures, and env toggle behavior.
+- CLI integration tests now cover enriched `turn-complete` hook context metadata and built-in auto memory-capture behavior with `--no-memory` disable coverage.
 
 ## Known Limits
 

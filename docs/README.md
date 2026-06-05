@@ -32,4 +32,5 @@ Current implementation is intentionally minimal:
 - Managed AGENTS template bootstrap command
 - Session lifecycle state/history/lifecycle logs for `whitey run`
 - Local runtime hook plugins (`.whitey/hooks/*.mjs`) with scoped state/log SDK
+- Hook-backed automatic memory capture on `turn-complete`/`session-close` when memory is enabled
 - MCP lifecycle shutdown + telemetry controls for stdio memory server

@@ -34,9 +34,26 @@ test("buildWhiteySessionStartContext includes execution and memory sections", as
 
   const session = await startWhiteySession(cwd);
   const context = await buildWhiteySessionStartContext(cwd, session, { useMemoryContext: true });
-  assert.match(context, /\[Whitey execution session\]/);
-  assert.match(context, /\[Whitey project memory\]/);
-  assert.match(context, /\[Whitey priority notes\]/);
+  assert.match(context.text, /\[Whitey execution session\]/);
+  assert.match(context.text, /\[Whitey project memory\]/);
+  assert.match(context.text, /\[Whitey priority notes\]/);
+  assert.equal(context.memoryEnabled, true);
+  assert.ok(context.memorySources.length >= 2);
+  assert.ok(context.memorySections.some((section) => section.name === "project.techStack"));
+  assert.ok(context.memorySections.some((section) => section.name === "notepad.priority"));
+
+  const lifecycleRaw = await readFile(join(cwd, ".whitey", "logs", `lifecycle-${new Date().toISOString().slice(0, 10)}.jsonl`), "utf8");
+  assert.match(lifecycleRaw, /"event":"context-build"/);
+  assert.match(lifecycleRaw, /"memorySources"/);
+});
+
+test("buildWhiteySessionStartContext returns empty memory metadata when memory is disabled", async () => {
+  const cwd = await mkdtemp(join(tmpdir(), "whitey-session-context-no-memory-"));
+  const session = await startWhiteySession(cwd);
+  const context = await buildWhiteySessionStartContext(cwd, session, { useMemoryContext: false });
+  assert.equal(context.memoryEnabled, false);
+  assert.equal(context.memorySources.length, 0);
+  assert.equal(context.memorySections.length, 0);
 });
 
 test("closeWhiteySession removes owned pointer and appends working-memory summary", async () => {

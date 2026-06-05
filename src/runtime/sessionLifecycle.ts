@@ -4,7 +4,7 @@ import { appendFile, readFile, rm, writeFile } from "node:fs/promises";
 import { appendNotepadWorkingEntry } from "../mcp/memory-tools.js";
 import { ensureStorage, lifecycleLogFile, sessionHistoryFile, sessionStateFile } from "../utils/fs.js";
 import type { WhiteyLifecycleEvent, WhiteySessionCloseOutcome, WhiteySessionState } from "../types/index.js";
-import { buildRunMemoryContext } from "./memoryContext.js";
+import { buildRunMemoryContextDetails, type MemorySectionMetadata, type MemorySourceMetadata } from "./memoryContext.js";
 
 interface SessionStartOptions {
   provider?: string;
@@ -13,6 +13,15 @@ interface SessionStartOptions {
 
 interface SessionStartContextOptions {
   useMemoryContext: boolean;
+}
+
+export interface SessionStartContextResult {
+  text: string;
+  sectionCount: number;
+  contextLength: number;
+  memoryEnabled: boolean;
+  memorySources: MemorySourceMetadata[];
+  memorySections: MemorySectionMetadata[];
 }
 
 function isProcessAlive(pid: number): boolean {
@@ -148,14 +157,19 @@ export async function buildWhiteySessionStartContext(
   cwd: string,
   session: WhiteySessionState,
   options: SessionStartContextOptions
-): Promise<string> {
+): Promise<SessionStartContextResult> {
   const sections = [executionSessionSection(session)];
+  let memorySources: MemorySourceMetadata[] = [];
+  let memorySections: MemorySectionMetadata[] = [];
   if (options.useMemoryContext) {
-    const memoryContext = await buildRunMemoryContext(cwd);
-    if (memoryContext.trim().length > 0) {
-      sections.push(memoryContext);
+    const memoryContext = await buildRunMemoryContextDetails(cwd);
+    memorySources = memoryContext.sources;
+    memorySections = memoryContext.sections;
+    if (memoryContext.text.trim().length > 0) {
+      sections.push(memoryContext.text);
     }
   }
+  const text = sections.join("\n\n");
   await appendLifecycleLog(cwd, {
     schemaVersion: "1",
     event: "context-build",
@@ -163,9 +177,22 @@ export async function buildWhiteySessionStartContext(
     sessionId: session.sessionId,
     cwd,
     source: "whitey-run",
-    payload: { memoryEnabled: options.useMemoryContext, sectionCount: sections.length }
+    payload: {
+      memoryEnabled: options.useMemoryContext,
+      sectionCount: sections.length,
+      contextLength: text.length,
+      memorySources,
+      memorySections
+    }
   });
-  return sections.join("\n\n");
+  return {
+    text,
+    sectionCount: sections.length,
+    contextLength: text.length,
+    memoryEnabled: options.useMemoryContext,
+    memorySources,
+    memorySections
+  };
 }
 
 export async function closeWhiteySession(

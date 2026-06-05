@@ -35,6 +35,9 @@
   - Local plugin discovery + dispatch
   - Hook disable env behavior
   - Plugin timeout behavior
+  - SDK memory helper write flow
+  - Disabled-memory explicit write errors
+  - Malformed project-memory error surfacing through plugin failures
 
 - `src/runtime/__tests__/history.test.ts`
   - Persistence ordering behavior
@@ -48,6 +51,8 @@
   - End-to-end run command behavior with mocked Copilot subprocess
   - JSON mode validation for `run`, `history`, and `status`
   - Run-time memory-context injection behavior and `--no-memory` bypass
+  - Enriched `turn-complete` plugin context metadata and memory toggle behavior
+  - Built-in hook-backed auto memory capture behavior and `--no-memory` disable behavior
   - CLI parity for `project-memory` and managed `agents-init` workflow
   - Isolated Copilot-related environment overrides via `src/test-support/env.ts`
 

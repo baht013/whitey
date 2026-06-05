@@ -27,3 +27,4 @@ Each page points to canonical docs or source modules. Keep this directory short,
 - Session lifecycle state/log flow for `whitey run`.
 - Local runtime hook plugins (`.whitey/hooks/*.mjs`) and plugin-state storage.
 - MCP stdio lifecycle shutdown/telemetry controls.
+- Built-in hook-backed memory capture + `sdk.memory` helper flow.

@@ -10,7 +10,7 @@ import { runPrompt } from "../runtime/executor.js";
 import { persistRun, readHistory } from "../runtime/history.js";
 import { getCopilotStatus } from "../runtime/status.js";
 import { isMemoryContextEnabled } from "../runtime/memoryContext.js";
-import { dispatchRuntimePluginEvent } from "../runtime/plugins.js";
+import { dispatchBuiltinRuntimeHooks, dispatchRuntimePluginEvent } from "../runtime/plugins.js";
 import {
   appendLifecycleLog,
   buildWhiteySessionStartContext,
@@ -87,7 +87,7 @@ async function commandHistory(cwd: string, limit: number, json: boolean): Promis
 
 async function commandRun(parsed: ReturnType<typeof parseArgs>, cwd: string): Promise<number> {
   const prompt = parsed.prompt || "";
-  const useMemoryContext = !parsed.noMemory && isMemoryContextEnabled();
+  const memoryEnabled = !parsed.noMemory && isMemoryContextEnabled();
 
   const approval = await requestApproval({
     prompt,
@@ -133,20 +133,46 @@ async function commandRun(parsed: ReturnType<typeof parseArgs>, cwd: string): Pr
   };
 
   try {
+    const builtInSessionEvent = await dispatchBuiltinRuntimeHooks(cwd, "session-start", {
+      sessionId: session.sessionId,
+      context: { provider: "copilot-cli", memoryEnabled }
+    });
+    for (const failure of builtInSessionEvent.failures) {
+      printErr(`Plugin ${failure.plugin} failed during session-start: ${failure.error}`);
+    }
+
     const sessionEvent = await dispatchRuntimePluginEvent(cwd, "session-start", {
       sessionId: session.sessionId,
-      context: { provider: "copilot-cli" }
+      context: { provider: "copilot-cli", memoryEnabled }
     });
     for (const failure of sessionEvent.failures) {
       printErr(`Plugin ${failure.plugin} failed during session-start: ${failure.error}`);
     }
 
-    const startupContext = await buildWhiteySessionStartContext(cwd, session, { useMemoryContext });
+    const startupContext = await buildWhiteySessionStartContext(cwd, session, { useMemoryContext: memoryEnabled });
+    const builtInContextEvent = await dispatchBuiltinRuntimeHooks(cwd, "context-build", {
+      sessionId: session.sessionId,
+      context: {
+        memoryEnabled: startupContext.memoryEnabled,
+        contextLength: startupContext.contextLength,
+        sectionCount: startupContext.sectionCount,
+        memorySources: startupContext.memorySources,
+        memorySections: startupContext.memorySections
+      }
+    });
+    for (const failure of builtInContextEvent.failures) {
+      printErr(`Plugin ${failure.plugin} failed during context-build: ${failure.error}`);
+    }
+
     const contextEvent = await dispatchRuntimePluginEvent(cwd, "context-build", {
       sessionId: session.sessionId,
       context: {
-        useMemoryContext,
-        contextLength: startupContext.length
+        useMemoryContext: memoryEnabled,
+        memoryEnabled: startupContext.memoryEnabled,
+        contextLength: startupContext.contextLength,
+        sectionCount: startupContext.sectionCount,
+        memorySources: startupContext.memorySources,
+        memorySections: startupContext.memorySections
       }
     });
     for (const failure of contextEvent.failures) {
@@ -158,8 +184,8 @@ async function commandRun(parsed: ReturnType<typeof parseArgs>, cwd: string): Pr
       cwd,
       timeoutMs: parsed.timeoutMs,
       verbose: parsed.verbose,
-      useMemoryContext,
-      startupContext
+      useMemoryContext: memoryEnabled,
+      startupContext: startupContext.text
     });
     const record = await persistRun(cwd, prompt, result);
     closeOutcome = {
@@ -178,16 +204,43 @@ async function commandRun(parsed: ReturnType<typeof parseArgs>, cwd: string): Pr
       payload: {
         runId: record.id,
         status: result.status,
-        exitCode: result.exitCode
+        exitCode: result.exitCode,
+        summary: result.summary,
+        promptPreview: record.promptPreview,
+        durationMs: result.durationMs,
+        transcriptPath: record.transcriptPath,
+        memoryEnabled
       }
     });
+
+    const builtInTurnEvent = await dispatchBuiltinRuntimeHooks(cwd, "turn-complete", {
+      sessionId: session.sessionId,
+      context: {
+        runId: record.id,
+        status: result.status,
+        exitCode: result.exitCode,
+        summary: result.summary,
+        promptPreview: record.promptPreview,
+        durationMs: result.durationMs,
+        transcriptPath: record.transcriptPath,
+        memoryEnabled
+      }
+    });
+    for (const failure of builtInTurnEvent.failures) {
+      printErr(`Plugin ${failure.plugin} failed during turn-complete: ${failure.error}`);
+    }
 
     const turnEvent = await dispatchRuntimePluginEvent(cwd, "turn-complete", {
       sessionId: session.sessionId,
       context: {
         runId: record.id,
         status: result.status,
-        exitCode: result.exitCode
+        exitCode: result.exitCode,
+        summary: result.summary,
+        promptPreview: record.promptPreview,
+        durationMs: result.durationMs,
+        transcriptPath: record.transcriptPath,
+        memoryEnabled
       }
     });
     for (const failure of turnEvent.failures) {
@@ -218,17 +271,33 @@ async function commandRun(parsed: ReturnType<typeof parseArgs>, cwd: string): Pr
     return mapExitCode(result.status);
   } finally {
     try {
-      await closeWhiteySession(cwd, session.sessionId, closeOutcome, { useMemoryContext });
+      await closeWhiteySession(cwd, session.sessionId, closeOutcome, { useMemoryContext: memoryEnabled });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to close session.";
       printErr(`Session close warning: ${message}`);
     }
+    const builtInCloseEvent = await dispatchBuiltinRuntimeHooks(cwd, "session-close", {
+      sessionId: session.sessionId,
+      context: {
+        status: closeOutcome.status,
+        exitCode: closeOutcome.exitCode,
+        runId: closeOutcome.runId,
+        summary: closeOutcome.summary,
+        memoryEnabled
+      }
+    });
+    for (const failure of builtInCloseEvent.failures) {
+      printErr(`Plugin ${failure.plugin} failed during session-close: ${failure.error}`);
+    }
+
     const closeEvent = await dispatchRuntimePluginEvent(cwd, "session-close", {
       sessionId: session.sessionId,
       context: {
         status: closeOutcome.status,
         exitCode: closeOutcome.exitCode,
-        runId: closeOutcome.runId
+        runId: closeOutcome.runId,
+        summary: closeOutcome.summary,
+        memoryEnabled
       }
     });
     for (const failure of closeEvent.failures) {

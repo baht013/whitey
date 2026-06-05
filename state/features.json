@@ -25,6 +25,9 @@
     "globalMcpAutoStartDisable": true,
     "sessionLifecycleCore": true,
     "runtimeHookPlugins": true,
+    "pluginMemorySdk": true,
+    "safeHookEventContext": true,
+    "autoMemoryCaptureHook": true,
     "mcpLifecycleShutdown": true,
     "mcpLifecycleTelemetry": true,
     "sessionCloseWorkingMemorySummary": true

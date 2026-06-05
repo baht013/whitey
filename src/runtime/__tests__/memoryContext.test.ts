@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it } from "node:test";
-import { buildRunMemoryContext, isMemoryContextEnabled } from "../memoryContext.js";
+import { buildRunMemoryContext, buildRunMemoryContextDetails, isMemoryContextEnabled } from "../memoryContext.js";
 import { withEnv } from "../../test-support/env.js";
 
 describe("runtime/memoryContext", () => {
@@ -18,6 +18,45 @@ describe("runtime/memoryContext", () => {
     await mkdir(join(cwd, ".whitey", "memory"), { recursive: true });
     await writeFile(join(cwd, ".whitey", "memory", "project-memory.json"), "{", "utf8");
     await assert.rejects(buildRunMemoryContext(cwd), SyntaxError);
+  });
+
+  it("loads canonical project-memory fallback when whitey memory is absent", async () => {
+    const cwd = await mkdtemp(join(tmpdir(), "whitey-memory-context-"));
+    await writeFile(join(cwd, "project-memory.json"), "{\"techStack\":\"Node.js\"}", "utf8");
+
+    const details = await buildRunMemoryContextDetails(cwd);
+    assert.match(details.text, /source: .*project-memory\.json/);
+    assert.match(details.text, /tech stack: Node\.js/);
+    const selected = details.sources.find((source) => source.kind === "canonical-project-memory");
+    assert.equal(selected?.selected, true);
+    assert.equal(selected?.loaded, true);
+  });
+
+  it("prefers whitey project-memory when whitey and canonical files both exist", async () => {
+    const cwd = await mkdtemp(join(tmpdir(), "whitey-memory-context-"));
+    await mkdir(join(cwd, ".whitey", "memory"), { recursive: true });
+    await writeFile(join(cwd, "project-memory.json"), "{\"techStack\":\"Fallback\"}", "utf8");
+    await writeFile(join(cwd, ".whitey", "memory", "project-memory.json"), "{\"techStack\":\"Primary\"}", "utf8");
+
+    const details = await buildRunMemoryContextDetails(cwd);
+    assert.match(details.text, /tech stack: Primary/);
+    assert.doesNotMatch(details.text, /Fallback/);
+    const whitey = details.sources.find((source) => source.kind === "whitey-project-memory");
+    const canonical = details.sources.find((source) => source.kind === "canonical-project-memory");
+    assert.equal(whitey?.selected, true);
+    assert.equal(canonical?.shadowed, true);
+  });
+
+  it("records shadowed canonical parse errors in metadata without failing", async () => {
+    const cwd = await mkdtemp(join(tmpdir(), "whitey-memory-context-"));
+    await mkdir(join(cwd, ".whitey", "memory"), { recursive: true });
+    await writeFile(join(cwd, ".whitey", "memory", "project-memory.json"), "{\"techStack\":\"TypeScript\"}", "utf8");
+    await writeFile(join(cwd, "project-memory.json"), "{", "utf8");
+
+    const details = await buildRunMemoryContextDetails(cwd);
+    const canonical = details.sources.find((source) => source.kind === "canonical-project-memory");
+    assert.equal(typeof canonical?.error, "string");
+    assert.match(canonical?.error || "", /Unexpected end of JSON input/);
   });
 
   it("builds project and priority sections", async () => {
@@ -40,11 +79,17 @@ describe("runtime/memoryContext", () => {
     );
     await writeFile(join(cwd, ".whitey", "memory", "notepad.md"), "## PRIORITY\nShip this first\n", "utf8");
 
+    const details = await buildRunMemoryContextDetails(cwd);
+    assert.match(details.text, /\[Whitey project memory\]/);
+    assert.match(details.text, /priority directive: Always run tests/);
+    assert.match(details.text, /\[Whitey priority notes\]/);
+    assert.match(details.text, /Ship this first/);
+    assert.ok(details.sections.some((section) => section.name === "project.techStack"));
+    assert.ok(details.sections.some((section) => section.name === "project.directive"));
+    assert.ok(details.sections.some((section) => section.name === "notepad.priority"));
+
     const context = await buildRunMemoryContext(cwd);
-    assert.match(context, /\[Whitey project memory\]/);
-    assert.match(context, /priority directive: Always run tests/);
-    assert.match(context, /\[Whitey priority notes\]/);
-    assert.match(context, /Ship this first/);
+    assert.equal(context, details.text);
   });
 
   it("honors WHITEY_MEMORY_CONTEXT env toggle", async () => {

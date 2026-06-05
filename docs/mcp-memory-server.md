@@ -49,6 +49,8 @@ Malformed project-memory JSON returns an explicit tool error instead of silently
 
 Run-time memory-context injection follows the same strictness: malformed project-memory JSON returns a run validation error.
 
+Runtime hook `sdk.memory` helpers reuse the same underlying memory tool handlers directly and do not require an external MCP client to be enabled.
+
 ## Tools
 
 - `project_memory_read`
